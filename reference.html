@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<title>Quick Guide to the BASIC EMULATOR</title>
+<title>ATBシ</title>
 <meta charset="UTF-8">
 <link rel="shortcut icon" href="favicon.ico">
 
 <style>
 body { font-family: "Helvetica"; }
-body { background-color: #413f33; color: rgb(255, 255, 255); }
+body { background-color: #000000; color: rgb(255, 255, 255); }
 a { color: cyan; text-decoration: none; }
 a:hover { text-decoration: underline; }
-#toc { float: right; background-color: #3a382b; font-size: 80%;}
-code, .code, dt { font-family: 'Helvetica'; font-weight: bold; color: #05ff05; }
+#toc { float: right; background-color: #000000; font-size: 80%;}
+code, .code, dt { font-family: 'Helvetica'; font-weight: bold; color: #00ff00; }
 h1 { margin-top: 0; }
-h2 { border-top: solid 2px black; border-bottom: solid 2px black; }
+h2 { border-top: solid 2px yellow; border-bottom: solid 2px yellow; }
+h3 {color: red;}
 pre.code { margin: 12pt; }
 .nyi { opacity: 0.65; }
 </style>
@@ -22,5 +23,166 @@ pre.code { margin: 12pt; }
 
 <section id="intro">
 <p>
-This is intended as a quick reference for the <a href="./">Basic Emulator</a> by <a target=_blank href="mailto:behlaaryav@gmail.com">Aaryav Behl</a>.
+This is a quick reference for the <a href="./">Basic Emulator</a> by <a target=_blank href="mailto:behlaaryav@gmail.com">Aaryav Behl</a>.
 </p>
+
+    </section>
+    
+    <section id="statements">
+    <h2>Statements</h2>
+    <section>
+    <h3>Variable Control</h3>
+    <dl>
+      <dt>CLEAR<dd>Clears all variables
+      <dt>[LET] <var>var</var> = <var>expr</var><dd>Assign a variable
+      <dt>DIM <var>var</var>( <var>size</var> [, <var>size</var> ...] ) [, <var>var</var>( <var>size</var> [, <var>size</var> ...] ) ...] <dd>Allocate arrays with given dimension
+      <dt>DEF FN <var>name</var>(<var>var</var>) = <var>aexpr</var><dd>Define function of a single variable
+    </dl>
+    </section>
+    
+    <section>
+    <h3>Flow Control</h3>
+    <dl>
+      <dt>GOTO <var>linenum</var><dd>Jump to a line number
+      <dt>GOSUB <var>linenum</var><dd>Enter subroutine at any line number
+      <dt>RETURN<dd>Return from a subroutine
+      <dt>ON <var>aexpr</var> GOTO <var>linenum</var> [, <var>linenum</var> ...]<dd>Branch based on index (value = 1, 2, ...)
+      <dt>ON <var>aexpr</var> GOSUB <var>linenum</var> [, <var>linenum</var> ...]<dd>Subroutine branch based on index (value = 1, 2, ...)
+      <dt>POP<dd>Convert last GOSUB into a GOTO
+      <dt>FOR <var>var</var> = <var>aexpr</var> TO <var>aexpr</var> [ STEP <var>aexpr</var> ]<dd>Loop with counter variable
+      <dt>NEXT [<var>var</var> [, <var>var</var> ...] ]<dd>End of loop
+      <dt>IF <var>expr</var> THEN <var>statement</var>
+      <dt>IF <var>expr</var> GOTO <var>linenum</var><dd>Conditional; if <var>expr</var> is false, rest of line is skipped
+      <dt>END<dd>Terminate the program cleanly
+      <dt>STOP<dd>Break, as if an error occurred
+    </dl>
+    </section>
+    
+    <section>
+    <h3>Error Handling</h3>
+    <dl>
+      <dt>ONERR GOTO <var>linenum</var><dd>Set an error hook
+      <dt>RESUME<dd>Retry line that caused ONERR GOTO
+    </dl>
+    </section>
+    
+    <section>
+    <h3>Text I/O</h3>
+    <dl>
+      <dt>PRINT <var>expr</var> [ [;,] <var>expr</var> ... ] [;]<dd>Output text. ; concatenates,
+          , advances to next tab stop. A trailing ; suppresses line break
+          <var>expr</var> can include SPC(<var>aexpr</var>) to advance by
+          multiple spaces, or TAB(<var>aexpr</var>) to advance to column
+      <dt>INPUT [<var>string</var> ;] <var>var</var> [, <var>var</var> ...]<dd>Read line of comma-delimited input, with optional prompt.
+      <dt>GET <var>var</var><dd>Read a single key
+      <dt>HOME<dd>Clear text display
+      <dt>HTAB <var>aexpr</var><dd>Position text cursor horizontally (1...40 or 1...80)
+      <dt>VTAB <var>aexpr</var><dd>Position text cursor vertically (1...24)
+      <dt>INVERSE<dd>Set output mode to black-on-white
+      <dt>FLASH<dd>Set output mode to flashing
+      <dt>NORMAL<dd>Set output mode to white-on-black
+      <dt>TEXT<dd>Set display to text mode
+    </dl>
+    </section>
+    
+    <section>
+    <h3>Low Resolution Graphics</h3>
+    <dl>
+      <dt>GR<dd>Set display to mixed test/low resolution ("lores") graphics mode, clear screen to black
+      <dt>COLOR= <var>aexpr</var><dd>Set lores color (0...15)
+      <dt>PLOT <var>aexpr</var>, <var>aexpr</var><dd>Plot lores point (x = 0...39, y = 0...39/47)
+      <dt>HLIN <var>aexpr</var>, <var>aexpr</var> AT <var>aexpr</var><dd>Plot horizontal line (x1, x2 at y)
+      <dt>VLIN <var>aexpr</var>, <var>aexpr</var> AT <var>aexpr</var><dd>Plot vertical line (y1, y2 at x)
+    </dl>
+    </section>
+    
+    <section>
+    <h3>High Resolution Graphics</h3>
+    <dl>
+      <dt>HGR<dd>Set display to mixed/high resolution ("hires") graphics mode, clear screen to black
+      <dt>HGR2<dd>Set display to full hires mode, clear screen to black
+      <dt>HPLOT [TO] <var>aexpr</var>, <var>aexpr</var> [ TO <var>aexpr</var>, <var>aexpr</var> ] ... <dd>Plot hires point/line (x=0...279, y=0...191)
+      <dt>HCOLOR= <var>aexpr</var><dd>Set hires color (0...7)
+    </dl>
+    </section>
+    
+    <section>
+    <h3>Inline Data</h3>
+    <dl>
+      <dt>DATA <var>value</var> [, <var>value</var> ...]<dd>Define inline data. Values
+    can be literals (unquoted strings), strings, or numbers
+      <dt>READ <var>var</var> [, <var>var</var> ...]<dd>Read the next DATA value
+      <dt>RESTORE<dd>Restore the DATA pointer to the first value
+    </dl>
+    </section>
+    
+    <section>
+    <h3>Miscellaneous</h3>
+    <dl>
+      <dt>REM [<var>comment</var>]<dd>Begin a comment; rest of line is skipped
+      <dt>TRACE<dd>Turn on trace mode (line numbers printed)
+      <dt>NOTRACE<dd>Turn off trace mode
+    </dl>
+    </section>
+    
+    <section id="shims">
+    <h3>Compatibility Shims</h3>
+    <dl>
+      <dt>SPEED= <var>aexpr</var><dd>Set character output delay &mdash; <em>has no effect</em>
+      <dt>POKE <var>aexpr</var>, <var>aexpr</var><dd>Set memory location to value
+          <ul>
+            <li><code>POKE 32,<var>n</var></code> &mdash; Text window left edge
+            <li><code>POKE 33,<var>n</var></code> &mdash; Text window width
+            <li><code>POKE 34,<var>n</var></code> &mdash; Text window top edge
+            <li><code>POKE 35,<var>n</var></code> &mdash; Text window bottom
+            <li><code>POKE 36,<var>n</var></code> &mdash; Text cursor x
+            <li><code>POKE 37,<var>n</var></code> &mdash; Text cursor y
+            <li><code>POKE 216,<var>n</var></code> &mdash; ONERR flag (<var>n</var> &lt; 128 disables ONERR handler)
+            <li><code>POKE 230,<var>n</var></code> &mdash; Hi-Res plotting page (32 = page 1, 64 = page 2)
+            <li><code>POKE 49168,0</code> or <code>POKE -16368,0</code> &mdash; clear keyboard strobe
+            <li><code>POKE 49200,0</code> or <code>POKE -16336,0</code> &mdash; toggle speaker (no-op)
+            <li><code>POKE 49232,0</code> or <code>POKE -16304,0</code> &mdash; graphics mode
+            <li><code>POKE 49233,0</code> or <code>POKE -16303,0</code> &mdash; text mode
+            <li><code>POKE 49234,0</code> or <code>POKE -16302,0</code> &mdash; full graphics mode
+            <li><code>POKE 49235,0</code> or <code>POKE -16301,0</code> &mdash; mixed text/graphics mode
+            <li><code>POKE 49236,0</code> or <code>POKE -16300,0</code> &mdash; display page 1
+            <li><code>POKE 49237,0</code> or <code>POKE -16299,0</code> &mdash; display page 2
+            <li><code>POKE 49238,0</code> or <code>POKE -16298,0</code> &mdash; lores graphics mode
+            <li><code>POKE 49239,0</code> or <code>POKE -16297,0</code> &mdash; hires graphics mode
+          </ul>
+    
+      <dt>CALL <var>aexpr</var><dd>Call native routine
+          <ul>
+            <li><code>CALL 54915</code> or <code>CALL -10621</code> &mdash; clear stack (pop all <code>FOR</code>/<code>NEXT</code>, <code>GOSUB</code>/<code>RETURN</code>, and <code>ONERR</code>/<code>RESUME</code> entries)
+            <li><code>CALL 62248</code> or <code>CALL -3288</code> &mdash; pop <code>ONERR</code>/<code>RESUME</code> entry from stack
+            <li><code>CALL 62436</code> or <code>CALL -3100</code> &mdash; reveal hi-res page 1
+            <li><code>CALL 62450</code> or <code>CALL -3086</code> &mdash; clear current hi-res page to black
+            <li><code>CALL 62454</code> or <code>CALL -3082</code> &mdash; clear current hi-res page to current color
+            <li><code>CALL 64500</code> or <code>CALL -1036</code> &mdash; move cursor right
+            <li><code>CALL 64528</code> or <code>CALL -1008</code> &mdash; move cursor left
+            <li><code>CALL 64538</code> or <code>CALL -998</code> &mdash; move cursor up
+            <li><code>CALL 64578</code> or <code>CALL -958</code> &mdash; clear text from cursor to bottom of window
+            <li><code>CALL 64614</code> or <code>CALL -922</code> &mdash; move cursor down
+            <li><code>CALL 64668</code> or <code>CALL -868</code> &mdash; clear text from cursor to end of line
+            <li><code>CALL 64780</code> or <code>CALL -756</code> &mdash; wait for keypress
+            <li><code>CALL 65152</code> or <code>CALL -384</code> &mdash; set inverse text mode
+            <li><code>CALL 65156</code> or <code>CALL -380</code> &mdash; set normal text mode
+          </ul>
+    
+      <dt>PR# <var>aexpr</var><dd>Direct output to slot
+          <ul>
+            <li><code>PR#0</code> &mdash; set 40 column mode
+            <li><code>PR#3</code> &mdash; set 80 column mode
+            <li><code>PR#4</code> &mdash; write to Thunderclock
+          </ul>
+    
+      <dt>IN# <var>aexpr</var><dd>Direct output to slot
+          <ul>
+            <li><code>IN#0</code> &mdash; read input from keyboard or DOS
+            <li><code>IN#4</code> &mdash; read from Thunderclock
+          </ul>
+    
+    </dl>
+    </section>
+    </section>
+    
