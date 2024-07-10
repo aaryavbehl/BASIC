@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+
+<title>ATBシ</title>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<link rel="shortcut icon" href="favicon.ico">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="display.css">
+
+<script src="https://cdn.rawgit.com/inexorabletash/polyfill/v0.1.29/polyfill.min.js"></script>
+<script src="https://cdn.rawgit.com/inexorabletash/polyfill/v0.1.29/keyboard.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/codemirror.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.61.1/codemirror.css">
+<script src="cm/basic.js"></script>
+<link rel="stylesheet" href="cm/basic.css">
+<style>
+    .CodeMirror { border: solid 1px black; width: 598px; height: 384px; background-color: white; }
+    .CodeMirror-scroll { height: 100%; }
+</style>
+
+<h1>BASIC Emulator</h1>
+<p>
+By <a target=_blank href="mailto:behlaaryav@gmail.com">Aaryav Behl</a>
+| <a target="_blank" href="https://github.com/aaryavbehl">GitHub</a>
+| <a target="_blank" href="https://linkedin.com/in/aaryavbehl">LinkedIn</a>
+&mdash; <a target="_blank" href="reference.html">Guide</a>
+
+<p>More projects:
+   <a href="https://aaryav.netlify.app">Portfolio Website</a>
+ | <a href="https://aaryavos.netlify.app">AaryavOS Web</a>
+</p>
+
+<br style="clear: both;">
+
+<div id="frame" class="jsb-frame" style="float: left; margin: 5px;" tabIndex="0">
+  <div id="screen-wrapper" class="jsb-wrapper">
+    <div id="lores" class="jsb-lores"></div>
+    <canvas id="hires" width="560" height="384" class="jsb-hires"></canvas>
+    <canvas id="hires2" width="560" height="384" class="jsb-hires"></canvas>
+    <div id="screen" class="jsb-tty"></div>
+  </div>
+</div>
+
+<div style="float: left; margin: 5px;">
+  Enter code:  &nbsp;&nbsp;
+  <button id="btn_run">&#x25B6; Run</button>
+  <button id="btn_stop" disabled>&#x25FC; Stop</button>
+  <select id="lb_files">
+    <option disabled selected="selected">Select a sample...</option>
+  </select>
+  <script>
+    fetch('samples/index.txt')
+      .then(response => {
+        if (!response.ok)
+          throw new Error(response.statusText);
+        return response.text();
+      })
+      .then(text => {
+        const select = document.querySelector('#lb_files');
+        let group;
+        text.split(/\r?\n/g).forEach(line => {
+          line = line.replace(/^\s+|\s+$/, '');
+          if (!line.length) return;
+          if (line.startsWith('#')) {
+            line = line.replace(/^#\s+/, '');
+            if (line.startsWith('___')) {
+              select.appendChild(document.createElement('hr'));
+            } else {
+              group = Object.assign(document.createElement('optgroup'),
+                                    {label: line});
+              select.appendChild(group);
+            }
+          } else {
+            const match = line.match(/^(\S+)\s+(.*)$/);
+            group.appendChild(Object.assign(
+              document.createElement('option'),
+              {value: match[1], innerText: match[2]}));
+          }
+        });
+      });
+  </script>
+
+  <div id="editorframe"></div>
+
+  <form id="submission" method="post" enctype="text/plain" action="mailto:behlaaryav@gmail.com?subject=BASIC%20Emulator%20Sample%20Submission" target=_blank>
+  <textarea name="source" id="source" style="display: none;">
+  </textarea>
+
+  <button id="btn_save" title="Save as a file">&#x1F4BE; Save</button>
+  <button id="btn_load" title="Load a file">&#x1F4C2; Load</button>
+  <button id="btn_share" title="Share by email">&#x1F4E9; Share</button>
+  <button id="show_paper" title="Echo all output to a &quot;print-out&quot;, so you can copy/paste">&#x1F4C3; Verbose</button>
+  <button id="hide_paper" title="Hide the &quot;print-out&quot;">&#x1F6AB; Hide</button>
+  </form>
+
+</div>
+
+<br style="clear: both;">
+
+<h3 id="links"></h3>
+
+<div id="paper-spacer"></div>
+<div id="paper"></div>
+
+<script src="basic.js?2012-02-08"></script>
+<script src="bell.js"></script>
+<script src="tty.js"></script>
+<script src="lores.js"></script>
+<script src="hires.js"></script>
+<script src="dos.js"></script>
+<script src="printer.js"></script>
+<script src="index.js"></script>
