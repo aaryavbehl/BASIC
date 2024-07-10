@@ -298,7 +298,7 @@ This is a quick reference for the <a href="./">Basic Emulator</a> by <a target=_
 </dl>
 
 <h3>Operator Precedence</h3>
-<p style="color: rgb(255, 123, 0);">Operators are listed vertically in order of precedence, from highest to lowest. Operators on the same line are of the same priority, and in an expression are executed from left to right. This order differs from the order in some other dialects of BASIC, but does match .
+
 
 <ul style="list-style-type: none">
   <li><code>( )</code>
@@ -316,9 +316,6 @@ This is a quick reference for the <a href="./">Basic Emulator</a> by <a target=_
 <section id="errorcodes">
 
     <h2>Error Codes</h2>
- 
-    <p style="color: rgb(255, 123, 0);">Error codes can be determined by calling
-    <code>PEEK(222)</code> in an ONERR handler.</p>
     
     <dl>
       <dt>0<dd>Next without for
@@ -341,3 +338,161 @@ This is a quick reference for the <a href="./">Basic Emulator</a> by <a target=_
     </dl>
     </section>
 
+    <section  id="dos">
+        <h3>DOS Commands</h3>
+        <dl>
+          <dt>MON[,C][,I][,O]<dd>Traces DOS 3.3 commands ('Commands', 'Input' and 'Output')
+          <dt>NOMON[,C][,I][,O]          <dd>Cancels tracing of DOS 3.3 commands ('Commands', 'Input' and 'Output')
+          <dt>OPEN <var>filename</var>[,L<var>len</var>]       <dd>Opens a text file.
+          <dt>APPEND <var>filename</var>            <dd>Appends to a text file.
+          <dt>CLOSE [<var>filename</var>]           <dd>Closes specified (or all) open text files.
+          <dt>POSITION <var>filename</var>[,R<var>num</var>]   <dd>Advances position in text file.
+          <dt>READ <var>filename</var>[,R<var>num</var>][,B<var>byte</var>] <dd>Reads from a text file.
+          <dt>WRITE <var>filename</var>[,R<var>num</var>][,B<var>byte</var>]<dd>Writes to a text file
+          <dt>DELETE <var>filename</var>            <dd>Delete a file
+          <dt>RENAME <var>oldname</var>,<var>newname</var>     <dd>Rename a file
+          <dt>PR# <var>slot</var>        <dd>Same as the BASIC command
+        </dl>
+        
+        <h3>DOS Error Codes</h3>
+        
+        <dl>
+          <dt>1<dd>Language not available &mdash; <em>Not generated</em>
+          <dt>2<dd>Range error &mdash; <em>Not generated</em>
+          <dt>4<dd>Write protected &mdash; <em>Not generated</em>
+          <dt>5<dd>End of data
+          <dt>6<dd>File not found
+          <dt>7<dd>Volume mismatch &mdash; <em>Not generated</em>
+          <dt>8<dd>I/O error &mdash; <em>Not generated</em>
+          <dt>9<dd>Disk full &mdash; <em>Not generated</em>
+          <dt>10<dd>File locked &mdash; <em>Not generated</em>
+          <dt>11<dd>Invalid option
+          <dt>12<dd>No buffers available &mdash; <em>Not generated</em>
+          <dt>13<dd>File type mismatch &mdash; <em>Not generated</em>
+          <dt>14<dd>Program too large &mdash; <em>Not generated</em>
+          <dt>15<dd>Not direct command &mdash; <em>Not generated</em>
+        </dl>
+        </section>
+        
+        <section id="io">
+
+        <h2>Input and Output</h2>
+       
+        <h3>Input</h3>
+
+        
+        <table style="margin-left: 3em;">
+          <tr><td><code>CHR$(8)</code><td>Left arrow
+          <tr><td><code>CHR$(10)</code><td>Down arrow
+          <tr><td><code>CHR$(11)</code><td>Up arrow
+          <tr><td><code>CHR$(13)</code><td>Enter or Return
+          <tr><td><code>CHR$(21)</code><td>Right arrow
+          <tr><td><code>CHR$(24)</code><td>Clear
+          <tr><td><code>CHR$(27)</code><td>Escape
+          <tr><td><code>CHR$(127)</code><td>Delete or Backspace
+        </table>
+        
+        
+        <h3>Output</h3>
+        
+        <table style="margin-left: 3em;">
+          <tr><td><code>CHR$(4)</code><td>DOS command escape prefix
+          <tr><td><code>CHR$(7)</code><td>Make a "beep" (if your browser supports it)
+          <tr><td><code>CHR$(8)</code><td>Backspace (move cursor left, wrap up)
+          <tr><td><code>CHR$(10)</code><td>Line feed (move cursor down)
+          <tr><td><code>CHR$(13)</code><td>Carriage return (move cursor down and to left edge)
+          <tr><td><code>CHR$(127)</code><td>Displays a cursor glyph
+        </table>
+
+        <table style="margin-left: 3em;">
+          <tr><td><code>CHR$(11)</code><td>Clears from the cursor position to the end of the window
+          <tr><td><code>CHR$(12)</code><td>Move cursor to upper left and clear window
+          <tr><td><code>CHR$(14)</code><td>Set normal text output
+          <tr><td><code>CHR$(15)</code><td>Set inverse text output
+          <tr><td><code>CHR$(17)</code><td>Set display to 40 columns
+          <tr><td><code>CHR$(18)</code><td>Set display to 80 columns
+          <tr><td><code>CHR$(21)</code><td>Deactivate the 80-column firmware
+          <tr><td><code>CHR$(22)</code><td>Scroll display down, preserving cursor position
+          <tr><td><code>CHR$(23)</code><td>Scroll display up, preserving cursor position
+          <tr><td><code>CHR$(24)</code><td>Disable mousetext
+          <tr><td><code>CHR$(25)</code><td>Move cursor to upper left (but do not clear window)
+          <tr><td><code>CHR$(26)</code><td>Clear the current line
+          <tr><td><code>CHR$(27)</code><td>Enable mousetext
+          <tr><td><code>CHR$(28)</code><td>Forward space (move cursor right, wrap down)
+          <tr><td><code>CHR$(29)</code><td>Clear from cursor position to end of line
+        </table>
+        
+        <p>
+        The text window can be changed and cursor finely controlled
+        with <code>POKE 32,<var>n</var></code> ... <code>POKE 37,<var>n</var></code>
+        </p>
+        </section>
+        <section id="grammar">
+
+            <h2>Process and Grammars</h2>
+
+            <p>Compilation is done by splitting the input into tokens which are then
+            consumed by a recursive descent parser which outputs a JavaScript
+            object representing the program.</p>
+            
+            <p>The token types (treated as terminals) are
+              <code>reserved</code>,
+              <code>identifier</code>,
+              <code>string-literal</code>,
+              <code>number-literal</code> <a href="#hex">[5]</a>,
+              <code>operator</code>,
+              <code>line-number</code>,
+              <code>separator</code>,
+              <code>remark</code>,
+              <code>data-declaration</code>
+                &mdash; take a peek at the code if you want the gruesome details. Source lines may
+                only start with line numbers or (as an extension) separators. Special statement
+                parsing is done while lexing: <code>REM</code> consumes anything to the next
+                line break, and <code>DATA</code> statements yield an array of strings
+                from the comma-delimited, optionally-quoted values in the source.
+            </p>
+            
+            <dl>
+            <dt>[x]<dd> zero or one occurences of x
+            <dt>{x}<dd> zero or more occurences of x
+            <dt>x|y<dd> one of either x or y
+            <dt>(x)<dd> grouping construct
+            </dl>
+            
+            <p>Overall program parsing is done with a recursive descent parser.</p>
+            
+            <pre class="code">
+            Program                  = Line { Line }
+            Line                     = line-number Statement { separator Statement }
+            Statement                = data-declaration | remark | Command | EmptyStatement
+            Command                  = identifier /*...*/ | reserved /*...*/
+            </pre>
+            
+            <p>Due to the irregular structure of the BASIC language, statements ("commands" in the above grammar)
+            are parsed with distinct cases for each statement type.
+            Most statements compile into a function call to a library of  routines. Expressions are parsed
+            with a standard recursive descent parser. The parser generates JavaScript expressions for each expression,
+            which are used as arguments for the library calls.</p>
+            
+            <pre class="code">
+            Expression               = OrExpression
+            OrExpression             = AndExpression { 'OR' AndExpression  }
+            AndExpression            = RelationalExpression { 'AND' RelationalExpression }
+            RelationalExpression     = AdditiveExpression { ('=' | '&lt;' | '&gt;' | '&lt;=' | '=&lt;' | '&gt;=' | '=&gt;' | '&lt;&gt;' | '&gt;&lt;') AdditiveExpression }
+            AdditiveExpression       = MultiplicativeExpression { ( '+' | '-' ) MultiplicativeExpression }
+            MultiplicativeExpression = PowerExpression { ( '*' | '/' ) PowerExpression }
+            PowerExpression          = UnaryExpression { '^' UnaryExpression }
+            UnaryExpression          = ( '+' | '-' | 'NOT' ) UnaryExpression
+                                     | FinalExpression
+            FinalExpression          = number-literal
+                                     | string-literal
+                                     | 'FN' user_function_name '(' Expression ')'
+                                     | reserved '(' Expression { ',' Expression } ')'
+                                     | identifier [ '(' Expression { ',' Expression } ')' ]
+                                     | '(' Expression ')'
+            </pre>
+            
+            <p>Since  supports re-entrant error handling and synchronous input,
+            the output of the compiler is an array of statement-functions plus an executor
+            function which implements the logic for walking over the array.<p>
+            </section>
