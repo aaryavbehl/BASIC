@@ -12,7 +12,7 @@ a:hover { text-decoration: underline; }
 code, .code, dt { font-family: 'Helvetica'; font-weight: bold; color: #00ff00; }
 h1 { margin-top: 0; }
 h2 { border-top: solid 2px yellow; border-bottom: solid 2px yellow; }
-h3 {color: red;}
+h3 {color: red; border-bottom: solid 2px cyan;}
 pre.code { margin: 12pt; }
 .nyi { opacity: 0.65; }
 </style>
@@ -27,7 +27,7 @@ This is a quick reference for the <a href="./">Basic Emulator</a> by <a target=_
 </p>
 
     </section>
-    
+
     <section id="statements">
     <h2>Statements</h2>
     <section>
@@ -185,4 +185,159 @@ This is a quick reference for the <a href="./">Basic Emulator</a> by <a target=_
     </dl>
     </section>
     </section>
+
+    <section id="functions">
+
+<h2>Functions</h2>
+
+<h3>Numeric Functions</h3>
+<dl>
+  <dt>ABS( <var>aexpr</var> )<dd>Absolute value of number
+  <dt>ATN( <var>aexpr</var> )<dd>Arctangent of number
+  <dt>COS( <var>aexpr</var> )<dd>Cosine of number
+  <dt>EXP( <var>aexpr</var> )<dd>Raise e to number
+  <dt>INT( <var>aexpr</var> )<dd>Integer part of number
+  <dt>LOG( <var>aexpr</var> )<dd>Natural log of number
+  <dt>RND( <var>aexpr</var> )<dd>Pseudo-random number generator.
+    If <var>aexpr</var> is positive, returns a random number from 0 to 0.999....
+    If <var>aexpr</var> is zero, repeats the last result.
+    If <var>aexpr</var> is negative, reseeds the generator.
+  <dt>SGN( <var>aexpr</var> )<dd>Sign of number (-1, 0, 1)
+  <dt>SIN( <var>aexpr</var> )<dd>Sine of number
+  <dt>SQR( <var>aexpr</var> )<dd>Square root of number
+  <dt>TAN( <var>aexpr</var> )<dd>Tangent of number
+</dl>
+<h3>String Functions</h3>
+<dl>
+  <dt>LEN( <var>sexpr</var> )<dd>Length of string
+  <dt>LEFT$( <var>sexpr</var>, <var>aexpr</var> )<dd>Left portion of (string, length)
+  <dt>MID$( <var>sexpr</var>, <var>aexpr</var> [, <var>aexpr</var>] )<dd>Substring of (string, start character, length)
+  <dt>RIGHT$( <var>sexpr</var>, <var>aexpr</var> )<dd>Right portion of (string, length)
+</dl>
+<h3>Type Conversion Functions</h3>
+<dl>
+  <dt>ASC( <var>sexpr</var> )<dd>ASCII code for first character of string
+  <dt>CHR$( <var>aexpr</var> )<dd>Character at specified ASCII code point <a href="#chr_extras"></a>
+  <dt>STR$( <var>aexpr</var> )<dd>String representation of number
+  <dt>VAL( <var>sexpr</var> )<dd>Parse string into number
+</dl>
+<h3>System Interaction Functions</h3>
+<dl>
+  <dt>FRE( <var>aexpr</var> )<dd>Garbage collect strings (returns 0)
+  <dt>PDL( <var>aexpr</var> )<dd>Paddle position (paddle number)
+  <dt>POS( <var>aexpr</var> )<dd>Horizontal cursor position
+  <dt>SCRN( <var>aexpr</var>, <var>aexpr</var> )<dd>Lores color at pixel (x,y) <a href="#hscrn"></a>
+</dl>
+<h3>User Defined Functions</h3>
+<dl>
+  <dt>FN <var>name</var>( <var>expr</var> )<dd>Execute user defined function <a href="#def_fn_string"></a>
+</dl>
+
+<h3 id="function_shims">Function Compatibility Shims</h3>
+<dl>
+  <dt id="peek">PEEK( <var>aexpr</var> )<dd>Value at memory location
+      <ul>
+        <li><code>PEEK(32)</code> &mdash; Text window left edge
+        <li><code>PEEK(33)</code> &mdash; Text window width
+        <li><code>PEEK(34)</code> &mdash; Text window top edge
+        <li><code>PEEK(35)</code> &mdash; Text window bottom
+        <li><code>PEEK(36)</code> &mdash; Text cursor x
+        <li><code>PEEK(37)</code> &mdash; Text cursor y
+        <li><code>PEEK(78)</code> &amp; <code>PEEK(79)</code> &mdash; Random-Number Field
+        <li><code>PEEK(222)</code> &mdash; Last error code
+        <li><code>PEEK(230)</code> &mdash; Hi-Res plotting page (32 = page 1, 64 = page 2)
+        <li><code>PEEK(49152)</code> or <code>PEEK(-16384)</code> &mdash; Read Keyboard
+        <li><code>PEEK(49168)</code> or <code>PEEK(-16368)</code> &mdash; Clear Keyboard strobe
+
+        <li><code>PEEK(49178)</code> or <code>PEEK(-16358)</code> &mdash; See if text mode (&gt; 127) or graphics mode (&lt; 128)
+        <li><code>PEEK(49179)</code> or <code>PEEK(-16357)</code> &mdash; See if mixed mode (&gt; 127) or full mode (&lt; 128)
+        <li><code>PEEK(49180)</code> or <code>PEEK(-16356)</code> &mdash; See if page2 (&gt; 127) or page1 (&lt; 128)
+        <li><code>PEEK(49181)</code> or <code>PEEK(-16355)</code> &mdash; See if hires mode (&gt; 127) or lores mode (&lt; 128)
+        <li><code>PEEK(49182)</code> or <code>PEEK(-16354)</code> &mdash; See if mousetext mode (&gt; 127)
+        <li><code>PEEK(49183)</code> or <code>PEEK(-16353)</code> &mdash; See if 80-column mode (&gt; 127)
+
+        <li><code>PEEK(49200)</code> or <code>PEEK(-16336)</code> &mdash; Click Speaker (no-op)
+        <li><code>PEEK(49248)</code> or <code>PEEK(-16288)</code> &mdash; Read Paddle Button #3 &mdash; <em>Use the PageDown key</em>
+        <li><code>PEEK(49249)</code> or <code>PEEK(-16287)</code> &mdash; Read Paddle Button #0 &mdash; <em>Use the Home key</em>
+        <li><code>PEEK(49250)</code> or <code>PEEK(-16286)</code> &mdash; Read Paddle Button #1 &mdash; <em>Use the End key</em>
+        <li><code>PEEK(49251)</code> or <code>PEEK(-16285)</code> &mdash; Read Paddle Button #2 &mdash; <em>Use the PageUp or Shift key</em>
+      </ul>
+</dl>
+</section>
+
+<section id="operators">
+
+<h2>Operators</h2>
+
+<h3>Comparison Operators</h3>
+<dl>
+  <dt>=<dd>Equality <a href="#eqeq"></a>
+  <dt>&lt;<dd>Less than
+  <dt>&gt;<dd>Greater than
+  <dt>&lt;=<dt>=&lt;<dd>Less than or equal
+  <dt>&gt;=<dt>=&gt;<dd>Greater than or equal
+  <dt>&lt;&gt;<dt>&gt;&lt;<dd>Not equal
+</dl>
+<h3>Boolean Operators</h3>
+<dl>
+  <dt>AND<dd>Conjunction
+  <dt>OR<dd>Disjunction
+  <dt>NOT<dd>Negation
+</dl>
+<h3>Arithmetic Operators</h3>
+<dl>
+  <dt>^<dd>Exponentiation
+  <dt>*<dd>Multiplication
+  <dt>/<dd>Division
+  <dt>+<dd>Addition
+  <dt>-<dd>Subtraction
+</dl>
+<h3>String Operators</h3>
+<dl>
+  <dt>+<dd>String Concatenation
+</dl>
+
+<h3>Operator Precedence</h3>
+<p style="color: rgb(255, 123, 0);">Operators are listed vertically in order of precedence, from highest to lowest. Operators on the same line are of the same priority, and in an expression are executed from left to right. This order differs from the order in some other dialects of BASIC, but does match .
+
+<ul style="list-style-type: none">
+  <li><code>( )</code>
+  <li><code>+ - NOT</code> &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; (unary operators)
+  <li><code>^</code>
+  <li><code>* /</code>
+  <li><code>+ -</code>
+  <li><code>= &lt; &gt; &lt;= =&lt; &gt;= =&gt; &lt;&gt; &gt;&lt;</code>
+  <li><code>AND</code>
+  <li><code>OR</code>
+</ul>
+
+</section>
+
+<section id="errorcodes">
+
+    <h2>Error Codes</h2>
+ 
+    <p style="color: rgb(255, 123, 0);">Error codes can be determined by calling
+    <code>PEEK(222)</code> in an ONERR handler.</p>
     
+    <dl>
+      <dt>0<dd>Next without for
+      <dt>16<dd>Syntax error &mdash; <em>Not generated</em>
+      <dt>22<dd>Return without gosub
+      <dt>42<dd>Out of data
+      <dt>53<dd>Illegal quantity
+      <dt>69<dd>Overflow
+      <dt>77<dd>Out of memory &mdash; <em>Not generated by all browsers</em>
+      <dt>90<dd>Undefined statement
+      <dt>107<dd>Bad subscript
+      <dt>120<dd>Redimensioned array
+      <dt>133<dd>Division by zero
+      <dt>163<dd>Type mismatch
+      <dt>176<dd>String too long &mdash; <em>Not generated</em>
+      <dt>191<dd>Formula too complex &mdash; <em>Not generated by all browsers</em>
+      <dt>224<dd>Undefined function
+      <dt>254<dd>Re-enter
+      <dt>255<dd>Break
+    </dl>
+    </section>
+
