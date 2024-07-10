@@ -496,3 +496,66 @@ This is a quick reference for the <a href="./">Basic Emulator</a> by <a target=_
             the output of the compiler is an array of statement-functions plus an executor
             function which implements the logic for walking over the array.<p>
             </section>
+
+            <section id="extensions">
+
+              <h2>Extensions beyond Standard </h2>
+
+              <ol>
+                <li id="def_fn_string">
+                  <code>DEF FN</code> supports string and integer functions
+                  e.g. <code>DEF FN IN$(X$) = " " + X$</code>
+                  &mdash; the return type must match the argument type, so string-to-number or number-to-string functions
+                  can not be implemented.
+                <li id="eqeq">
+                  "Double equals" <code>==</code> is supported for equality comparisons, with the same meaning as "single equals" <code>=</code>
+                <li id="chr_extras">
+                  When printing characters, <code>CHR$()</code> values greater than 255 generate glyphs that might be useful for implementing certain maze games. <em>(An earlier version of this page allowed arbitrary Unicode characters to be displayed, but the text is now displayed using bitmaps so that is not possible.)</em>
+                <li id="hscrn">
+                  <code>HSCRN(<var>x</var>,<var>y</var>)</code> is added to allow reading the
+                  hires screen. On a real Apple II this required a machine-language routine (or a shape table and <code>XDRAW</code>) and
+                  extensive knowledge of the Apple II's color generation scheme.
+                <li id="hex">
+                  Hexadecimal number literals are permitted, with <code>$</code> as a prefix, e.g. <code>POKE $C010, 0</code>
+              </ol>
+              </section>
+              
+              <script src="https://cdn.rawgit.com/inexorabletash/polyfill/v0.1.29/polyfill.min.js"></script>
+              <script>
+              (function buildTOC(el) {
+                var html = [];
+                el.innerHTML = "";
+              
+                var level = 1, unique = 1;
+                [].forEach.call(document.querySelectorAll('h2, h3'), function(c) {
+                  var newLevel = parseInt(c.nodeName.charAt(1), 10);
+                  if (newLevel > level) {
+                    html.push('<ol>');
+                  } else if (level > newLevel) {
+                    html.push('</ol>');
+                  }
+                  level = newLevel;
+              
+                  function makeID(string) {
+                    var id = String(string).replace(/[^a-zA-Z0-9]/g, '-');
+                    while (document.getElementById(id))
+                      id += '_' + unique++;
+                    id = id.replace(/-+/g, '-');
+                    return id;
+                  }
+                  var key = makeID(c.textContent);
+              
+                  html.push('<li><a href="#' + key + '">' + c.innerHTML + '</a>');
+              
+                  c.id = key;
+              
+                });
+              
+                while( level > 1 ) {
+                  html.push( '</ol>' );
+                  --level;
+                }
+                el.innerHTML = html.join('');
+              }(document.getElementById('toc')));
+              
+              </script>              
