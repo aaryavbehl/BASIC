@@ -201,3 +201,201 @@ function DOS(tty) {
           activebuffer = buf;
           mode = "r";
         }
+
+        function write(filename, recordnum, bytenum) {
+          var buf = buffers[filename];
+          if (!buf) {
+            doserror(DOSErrors.FILE_NOT_FOUND);
+          }
+      
+          if (buf.file === null) {
+
+            vfs_set(filename, '');
+            buf.file = '';
+          }
+
+          buf.recordnum = recordnum;
+          if (buf.recordlength > 1) {
+            buf.filepointer = buf.recordlength * recordnum;
+          }
+          buf.filepointer += bytenum;
+
+          activebuffer = buf;
+          mode = "w";
+        }
+      
+        function position(filename, records) {
+          var buf = buffers[filename];
+          if (!buf) {
+
+            open(filename, 0, false);
+            buf = buffers[filename];
+          }
+
+          buf.recordnum += records;
+          buf.filepointer += buf.recordlength * records;
+      
+        }
+      
+        function executeCommand(command) {
+      
+          var filename, filename2, args, slot;
+      
+          if (monico & MON_C && tty) {
+            tty.writeString(command + "\r");
+          }
+      
+          var m;
+          if ((m = command.match(/^MON([\x20-\x7E]*)/))) {
+
+            args = parseArgs(m[1], 'ICO');
+      
+            if (args.I !== undefined) {
+              monico |= MON_I;
+            }
+            if (args.C !== undefined) {
+              monico |= MON_C;
+            }
+            if (args.O !== undefined) {
+              monico |= MON_O;
+            }
+      
+          } else if ((m = command.match(/^NOMON([\x20-\x7E]*)/))) {
+
+            args = parseArgs(m[1], 'ICO');
+            if (args.I !== undefined) {
+              monico &= ~MON_I;
+            }
+            if (args.C !== undefined) {
+              monico &= ~MON_C;
+            }
+            if (args.O !== undefined) {
+              monico &= ~MON_O;
+            }
+          } else if ((m = command.match(/^OPEN\s*([\x20-\x2B\x2D-\x7E]+)(,[\x20-\x7E]*)?/))) {
+
+            filename = m[1];
+            args = parseArgs(m[2], 'L');
+            open(filename, args.L);
+          } else if ((m = command.match(/^APPEND\s*([\x20-\x2B\x2D-\x7E]+)(,[\x20-\x7E]*)?/))) {
+
+            filename = m[1];
+            args = parseArgs(m[2]);
+            append(filename, args.L);
+          } else if ((m = command.match(/^CLOSE\s*([\x20-\x2B\x2D-\x7E]+)?(,[\x20-\x7E]*)?/))) {
+
+            filename = m[1];
+            close(filename);
+          } else if ((m = command.match(/^POSITION\s*([\x20-\x2B\x2D-\x7E]+)(,[\x20-\x7E]*)?/))) {
+
+            filename = m[1];
+            args = parseArgs(m[2], 'R');
+            position(filename, args.R);
+          } else if ((m = command.match(/^READ\s*([\x20-\x2B\x2D-\x7E]+)(,[\x20-\x7E]*)?/))) {
+
+            filename = m[1];
+            args = parseArgs(m[2], 'RB');
+            read(filename, args.R, args.B);
+          } else if ((m = command.match(/^WRITE\s*([\x20-\x2B\x2D-\x7E]+)(,[\x20-\x7E]*)?/))) {
+
+            filename = m[1];
+            args = parseArgs(m[2], 'RB');
+            write(filename, args.R, args.B);
+          } else if ((m = command.match(/^DELETE\s*([\x20-\x2B\x2D-\x7E]+)(,[\x20-\x7E]*)?/))) {
+
+            filename = m[1];
+            args = parseArgs(m[2]);
+            unlink(filename);
+          } else if ((m = command.match(/^RENAME\s*([\x20-\x2B\x2D-\x7E]+),\s*([\x20-\x2B\x2D-\x7E]+)(,[\x20-\x7E]*)?/))) {
+
+            filename = m[1];
+            filename2 = m[2];
+            args = parseArgs(m[3]);
+            rename(filename, filename2);
+          } else if ((m = command.match(/^PR#\s*([\x20-\x2B\x2D-\x7E]+)(,[\x20-\x7E]*)?/))) {
+
+            slot = Number(m[1]);
+            args = parseArgs(m[2]);
+            if (slot === 0) {
+              if (tty.setFirmwareActive) { tty.setFirmwareActive(false); }
+              hooked_writeChar = tty_writeChar;
+            } else if (slot === 3) {
+              if (tty.setFirmwareActive) { tty.setFirmwareActive(true); }
+              hooked_writeChar = tty_writeChar;
+            } else if (slot === 4) {
+              hooked_writeChar = clock_writeChar;
+            } else {
+              doserror(DOSErrors.RANGE_ERROR);
+            }
+          } else if ((m = command.match(/^IN#\s*([\x20-\x2B\x2D-\x7E]+)(,[\x20-\x7E]*)?/))) {
+
+            slot = Number(m[1]);
+            args = parseArgs(m[2]);
+            if (slot === 0 || slot === 3) {
+              hooked_readLine = tty_readLine;
+              hooked_readChar = tty_readChar;
+            } else if (slot === 4) {
+              hooked_readLine = clock_readLine;
+              hooked_readChar = clock_readChar;
+            } else {
+              doserror(DOSErrors.RANGE_ERROR);
+            }
+          } else if ((m = command.match(/^$/))) {
+
+            activebuffer = null;
+            mode = "";
+          } else {
+            doserror(DOSErrors.SYNTAX_ERROR);
+          }
+        }
+      
+        tty_readLine = tty.readLine;
+        tty_readChar = tty.readChar;
+        tty_writeChar = tty.writeChar;
+      
+        hooked_readLine = tty_readLine;
+        hooked_readChar = tty_readChar;
+        hooked_writeChar = tty_writeChar;
+      
+        tty.readLine = dos_readLine;
+        tty.readChar = dos_readChar;
+        tty.writeChar = dos_writeChar;
+      
+        function dos_readLine(callback, prompt) {
+      
+          var string = "", c, data, len, fp, buffer;
+          if (mode === "r") {
+
+            data = activebuffer.file;
+            len = data.length;
+            fp = activebuffer.filepointer;
+      
+            if (fp >= len) {
+              doserror(DOSErrors.END_OF_DATA);
+            }
+      
+            buffer = [];
+            while (fp < len) {
+
+              c = data[fp];
+              fp += 1;
+              if (c === "\r" || c === "\n" || c === "\x00") {
+                break;
+              } else {
+                buffer.push(c);
+              }
+            }
+            activebuffer.filepointer = fp;
+            string = buffer.join("");
+      
+            if (monico & MON_I) {
+              tty.writeString(prompt + string + "\r");
+            }
+             
+      string = Object.assign(new String(string), {ignoreColons: true});
+
+      setTimeout(function() { callback(string); }, 0);
+    } else {
+      hooked_readLine(callback, prompt);
+    }
+  }
