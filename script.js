@@ -73,4 +73,82 @@
         }
       };
       var pdl = [0, 0, 0, 0];
+    wrapper_elem.addEventListener('mousemove', function (e) {
+        var rect = wrapper_elem.getBoundingClientRect(),
+            x = e.clientX - rect.left, y = e.clientY - rect.top;
+        function clamp(n, min, max) { return n < min ? min : n > max ? max : n; }
+        pdl[0] = clamp(x / (rect.width - 1), 0, 1);
+        pdl[1] = clamp(y / (rect.height - 1), 0, 1);
+      });
+  
+      var program;
+      dos.reset();
+      tty.reset();
+      tty.autoScroll = true;
+  
+      try {
+        program = basic.compile(src);
+      } catch (e) {
+        if (e instanceof basic.ParseError) {
+          tty.writeString(e.message + '\r');
+          tty.writeString('Source line: ' + e.line + ', column: ' + e.column);
+        } else {
+          tty.writeString(e.message);
+        }
+        return frame;
+      }
+  
+      var stopped = false;
+  
+      program.init({
+        tty: tty,
+        hires: hires,
+        hires2: hires2,
+        lores: lores,
+        display: display,
+        paddle: function (n) { return pdl[n]; }
+      });
+      setTimeout(driver, 0);
+  
+      var NUM_SYNCHRONOUS_STEPS = 37;
+      function driver() {
+        var state = basic.STATE_RUNNING;
+        var statements = NUM_SYNCHRONOUS_STEPS;
+  
+        while (!stopped && state === basic.STATE_RUNNING && statements > 0) {
+          try {
+            state = program.step(driver);
+          } catch (e) {
+            tty.writeString(e.message);
+            stopped = true;
+            return;
+          }
+  
+          statements -= 1;
+        }
+  
+        if (state === basic.STATE_STOPPED || stopped) {
+          stopped = true;
+        } else if (state === basic.STATE_BLOCKED) {
+          
+        } else { 
+          setTimeout(driver, 0); 
+        }
+      }
+  
+      return frame;
+    }
+  
+    window.addEventListener('load', function() {
+      [].forEach.call($$('script'), function(script) {
+        if (script.type === 'text/-basic') {
+          var source = script.innerText || script.textContent;
+          var elem = createInstance(source);
+          script.parentElement.insertBefore(elem, script.nextSibling);
+        }
+      });
+    });
+  
+  }());
+  
   

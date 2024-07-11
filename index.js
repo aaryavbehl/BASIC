@@ -1,0 +1,182 @@
+window.addEventListener('DOMContentLoaded', function() {
+
+    var $ = function(s) { return document.querySelector(s); };
+  
+    $('#lb_files').selectedIndex = 0;
+  
+    var frame = $('#frame');
+  
+    var keyboard = frame;
+    if (/iPod|iPad|iPhone/.test(navigator.platform)) {
+      keyboard = document.createElement('input');
+      keyboard.type = 'text';
+      keyboard.style.width = keyboard.style.height = '1px';
+      keyboard.style.border = 'none';
+      keyboard.style.position = 'absolute';
+      keyboard.style.left = keyboard.style.top = '-100px';
+      frame.removeAttribute('tabIndex');
+      frame.addEventListener('click', function() { keyboard.focus(); });
+      frame.parentNode.insertBefore(keyboard, frame);
+    }
+  
+    var tty = new TTY($('#screen'), keyboard);
+    (function() {
+
+      var b = new Bell(/^.*\/|/.exec(window.location)[0]);
+      var orig = tty.writeChar;
+      tty.writeChar = function index_writeChar(c) {
+        if (c.charCodeAt(0) === 7)
+          b.play();
+        else
+          orig(c);
+      };
+    }());
+    var dos = new DOS(tty);
+  
+    var lores = new LoRes($('#lores'), 40, 48);
+    var hires = new HiRes($('#hires'), 280, 192);
+    var hires2 = new HiRes($('#hires2'), 280, 192);
+    var display = {
+      state: { graphics: false, full: true, page1: true, lores: true },
+      setState: function(state, value /* ... */) {
+        var args = Array.prototype.slice.call(arguments);
+        while (args.length) {
+          state = args.shift();
+          value = args.shift();
+          this.state[state] = value;
+        }
+  
+        if (this.state.graphics) {
+          lores.show(this.state.lores);
+          hires.show(!this.state.lores && this.state.page1);
+          hires2.show(!this.state.lores && !this.state.page1);
+          tty.splitScreen(tty.getScreenSize().height - (this.state.full ? 0 : 4));
+        } else {
+          lores.show(false);
+          hires.show(false);
+          hires2.show(false);
+          tty.splitScreen(0);
+        }
+      },
+      getState: function() {
+        return Object.assign({}, this.state);
+      }
+    };
+    var pdl = [0, 0, 0, 0];
+e
+    var editor;
+    if (typeof CodeMirror === 'function') {
+      editor = new CodeMirror($('#editorframe'), {
+        mode: 'basic',
+        tabMode: 'default',
+        content: $('#source').value,
+        height: '100%'
+      });
+    } else {
+      editor = (function() {
+        var textArea = document.createElement('textarea');
+        $('#editorframe').appendChild(textArea);
+        textArea.style.width = '598px';
+        textArea.style.height = '384px';
+        return {
+          getValue: function() {
+            return textArea.value;
+          },
+          setValue: function(value) {
+            textArea.value = value;
+          },
+          setCursor: function(line, column) {
+
+          }
+        };
+      }());
+    }
+  
+    $('#btn_share').onclick = function(e) {
+
+      $('#source').value = getSource();
+    };
+  
+    function getSource() {
+      return editor.getValue();
+    }
+  
+    function setSource(source) {
+      editor.setValue(source);
+    }
+  
+    var program;
+    $('#btn_run').addEventListener('click', function(e) {
+      e.preventDefault();
+  
+      dos.reset();
+      tty.reset();
+      tty.autoScroll = true;
+  
+      try {
+        program = basic.compile(getSource());
+      } catch (e) {
+        if (e instanceof basic.ParseError) {
+          editor.setCursor({ line: e.line - 1, ch: e.column - 1 });
+          console.log(e.message +
+                      ' (source line:' + e.line + ', column:' + e.column + ')');
+        }
+        alert(e);
+        return;
+      }
+  
+      stopped = false;
+      updateUI();
+      $('#btn_stop').focus();
+  
+      program.init({
+        tty: tty,
+        hires: hires,
+        hires2: hires2,
+        lores: lores,
+        display: display,
+        paddle: function(n) { return pdl[n]; }
+      });
+      setTimeout(driver, 0);
+    });
+  
+    $('#btn_stop').addEventListener('click', function(e) {
+      e.preventDefault();
+  
+      tty.reset(); 
+      stopped = true;
+      updateUI();
+    });
+  
+    $('#lb_files').addEventListener('change', function() {
+      var sel = $('#lb_files');
+      loadFile('samples/' + sel.value + ".txt", setSource);
+    });
+  
+    var current_file_name;
+    $('#btn_save').addEventListener('click', function(e) {
+      e.preventDefault();
+      var a = document.createElement('a');
+      a.download = current_file_name || 'basic_program.txt';
+      a.href = 'data:text/plain;base64,' + window.btoa(getSource());
+      document.body.appendChild(a);
+      a.click();
+      a.parentElement.removeChild(a);
+    });
+    $('#btn_load').addEventListener('click', function(e) {
+      e.preventDefault();
+      var input = document.createElement('input');
+      input.type = 'file';
+      input.addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        current_file_name = file.name;
+        var reader = new FileReader();
+        reader.addEventListener('load', function() {
+          setSource(reader.result);
+        });
+        reader.readAsText(file);
+      });
+      document.body.appendChild(input);
+      input.click();
+      input.parentElement.removeChild(input);
+    });
