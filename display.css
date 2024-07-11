@@ -1,0 +1,95 @@
+.jsb-frame   {width: 560px; height: 384px; border-style: ridge; border-width: 10px; border-color: rgb(0, 255, 21); padding: 10px; background-color: #181818; }
+.jsb-frame:focus { background-color: #001300; }
+.jsb-wrapper { width: 560px; height: 384px; overflow: hidden; padding: 0; margin: 0;  position: relative; }
+.jsb-lores   {position: absolute; z-index: 2; left: 0; top: 0; width: 560px; height: 384px; overflow: hidden; visibility: hidden; }
+.jsb-hires   {position: absolute; z-index: 2; left: 0; top: 0; width: 560px; height: 384px; overflow: hidden; visibility: hidden; background-color: #ffffff; }
+.jsb-tty     {position: absolute; z-index: 3; left: 0; top: 0; width: 560px; height: 384px; overflow: hidden;  }
+
+.jsb-tty table { table-layout: fixed; border-collapse: collapse; }
+.jsb-tty tr { height: 16px; }
+
+.jsb-tty .jsb-chr { height: 16px; line-height: 0; border: 0; padding: 0; margin: 0; background-repeat: no-repeat; }
+.jsb-tty .jsb-chr-cursor { position: relative; display: inline-block; }
+
+.jsb-40col .jsb-chr { background-image: url(''); width: 14px; }
+
+.jsb-80col .jsb-chr { background-image: url(''); width: 7px; }
+
+
+.jsb-lores table { table-layout: fixed; border-collapse: collapse; }
+.jsb-lores tr { height: 8px; margin: 0; padding: 0; }
+.jsb-lores td { width: 14px; height: 8px; margin: 0; padding: 0; }
+
+
+.jsb-40col .jsb-chr0 { background-position: -168px 0px }
+.jsb-40col .jsb-chr1 { background-position: -168px -16px }
+.jsb-40col .jsb-chr2 { background-position: -168px -32px }
+.jsb-40col .jsb-chr3 { background-position: -168px -48px }
+.jsb-40col .jsb-chr4 { background-position: -168px -64px }
+.jsb-40col .jsb-chr5 { background-position: -168px -80px }
+.jsb-40col .jsb-chr6 { background-position: -168px -96px }
+.jsb-40col .jsb-chr7 { background-position: -168px -112px }
+.jsb-40col .jsb-chr8 { background-position: -168px -128px }
+.jsb-40col .jsb-chr9 { background-position: -168px -144px }
+.jsb-40col .jsb-chr10 { background-position: -168px -160px }
+.jsb-40col .jsb-chr11 { background-position: -168px -176px }
+.jsb-40col .jsb-chr12 { background-position: -168px -192px }
+.jsb-40col .jsb-chr13 { background-position: -168px -208px }
+.jsb-40col .jsb-chr14 { background-position: -168px -224px }
+.jsb-40col .jsb-chr15 { background-position: -168px -240px }
+.jsb-40col .jsb-chr16 { background-position: -182px 0px }
+.jsb-40col .jsb-chr17 { background-position: -182px -16px }
+.jsb-40col .jsb-chr18 { background-position: -182px -32px }
+.jsb-40col .jsb-chr19 { background-position: -182px -48px }
+.jsb-40col .jsb-chr20 { background-position: -182px -64px }
+.jsb-40col .jsb-chr21 { background-position: -182px -80px }
+.jsb-40col .jsb-chr22 { background-position: -182px -96px }
+.jsb-40col .jsb-chr23 { background-position: -182px -112px }
+.jsb-40col .jsb-chr24 { background-position: -182px -128px }
+.jsb-40col .jsb-chr25 { background-position: -182px -144px }
+.jsb-40col .jsb-chr26 { background-position: -182px -160px }
+.jsb-40col .jsb-chr27 { background-position: -182px -176px }
+.jsb-40col .jsb-chr28 { background-position: -182px -192px }
+.jsb-40col .jsb-chr29 { background-position: -182px -208px }
+.jsb-40col .jsb-chr30 { background-position: -182px -224px }
+.jsb-40col .jsb-chr31 { background-position: -182px -240px }
+.jsb-40col .jsb-chr32 { background-position: -140px 0px }
+.jsb-40col .jsb-chr33 { background-position: -140px -16px }
+.jsb-40col .jsb-chr34 { background-position: -140px -32px }
+.jsb-40col .jsb-chr35 { background-position: -140px -48px }
+.jsb-40col .jsb-chr36 { background-position: -140px -64px }
+.jsb-40col .jsb-chr37 { background-position: -140px -80px }
+.jsb-40col .jsb-chr38 { background-position: -140px -96px }
+.jsb-40col .jsb-chr39 { background-position: -140px -112px }
+.jsb-40col .jsb-chr40 { background-position: -140px -128px }
+.jsb-40col .jsb-chr41 { background-position: -140px -144px }
+.jsb-40col .jsb-chr42 { background-position: -140px -160px }
+.jsb-40col .jsb-chr43 { background-position: -140px -176px }
+.jsb-40col .jsb-chr44 { background-position: -140px -192px }
+.jsb-40col .jsb-chr45 { background-position: -140px -208px }
+.jsb-40col .jsb-chr46 { background-position: -140px -224px }
+.jsb-40col .jsb-chr47 { background-position: -140px -240px }
+.jsb-40col .jsb-chr48 { background-position: -154px 0px }
+.jsb-40col .jsb-chr49 { background-position: -154px -16px }
+.jsb-40col .jsb-chr50 { background-position: -154px -32px }
+.jsb-40col .jsb-chr51 { background-position: -154px -48px }
+.jsb-40col .jsb-chr52 { background-position: -154px -64px }
+.jsb-40col .jsb-chr53 { background-position: -154px -80px }
+.jsb-40col .jsb-chr54 { background-position: -154px -96px }
+.jsb-40col .jsb-chr55 { background-position: -154px -112px }
+.jsb-40col .jsb-chr56 { background-position: -154px -128px }
+.jsb-40col .jsb-chr57 { background-position: -154px -144px }
+.jsb-40col .jsb-chr58 { background-position: -154px -160px }
+.jsb-40col .jsb-chr59 { background-position: -154px -176px }
+.jsb-40col .jsb-chr60 { background-position: -154px -192px }
+.jsb-40col .jsb-chr61 { background-position: -154px -208px }
+.jsb-40col .jsb-chr62 { background-position: -154px -224px }
+.jsb-40col .jsb-chr63 { background-position: -154px -240px }
+.jsb-40col .jsb-chr64 { background-position: -56px 0px }
+.jsb-40col .jsb-chr65 { background-position: -56px -16px }
+.jsb-40col .jsb-chr66 { background-position: -56px -32px }
+.jsb-40col .jsb-chr67 { background-position: -56px -48px }
+.jsb-40col .jsb-chr68 { background-position: -56px -64px }
+.jsb-40col .jsb-chr69 { background-position: -56px -80px }
+.jsb-40col .jsb-chr70 { background-position: -56px -96px }
+.jsb-40col .jsb-chr71 { background-position: -56px -112px }

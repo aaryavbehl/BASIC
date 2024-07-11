@@ -180,3 +180,105 @@ e
       input.click();
       input.parentElement.removeChild(input);
     });
+    
+  var printer = null;
+  var paper = $('#paper');
+  $('#show_paper').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.body.classList.add('printout');
+    printer = new Printer(tty, paper);
+  });
+  $('#hide_paper').addEventListener('click', function(e) {
+    e.preventDefault();
+    document.body.classList.remove('printout');
+    printer.close();
+    printer = null;
+  });
+
+  var wrapper = $('#screen-wrapper');
+  wrapper.addEventListener('mousemove', function(e) {
+    var rect = wrapper.getBoundingClientRect(),
+        x = e.clientX - rect.left, y = e.clientY - rect.top;
+    function clamp(n, min, max) { return n < min ? min : n > max ? max : n; }
+    pdl[0] = clamp(x / (rect.width - 1), 0, 1);
+    pdl[1] = clamp(y / (rect.height - 1), 0, 1);
+  });
+
+  var stopped = true;
+  function updateUI() {
+    var btnFocus = (document.activeElement === $("#btn_run") ||
+                    document.activeElement === $("#btn_stop"));
+    $("#btn_stop").disabled = stopped ? "disabled" : "";
+    $("#btn_run").disabled = stopped ? "" : "disabled";
+    $("#lb_files").disabled = stopped ? "" : "disabled";
+
+    if (btnFocus || stopped) {
+      $(stopped ? "#btn_run" : "#btn_stop").focus();
+    } else {
+      tty.focus();
+    }
+  }
+
+  var NUM_SYNCHRONOUS_STEPS = 37;
+
+  function driver() {
+    var state = basic.STATE_RUNNING;
+    var statements = NUM_SYNCHRONOUS_STEPS;
+
+    while (!stopped && state === basic.STATE_RUNNING && statements > 0) {
+
+      try {
+        state = program.step(driver);
+      } catch (e) {
+        console.log(e);
+        alert(e.message ? e.message : e);
+        stopped = true;
+        updateUI();
+        return;
+      }
+
+      statements -= 1;
+    }
+
+    if (state === basic.STATE_STOPPED || stopped) {
+      stopped = true;
+      updateUI();
+    } else if (state === basic.STATE_BLOCKED) {
+
+    } else { 
+      setTimeout(driver, 0); 
+    }
+  }
+
+  function parseQueryParams() {
+    var params = {};
+    var query = document.location.search.substring(1);
+    query.split(/&/g).forEach(function(pair) {
+      pair = pair.replace(/\+/g, " ").split(/=/).map(decodeURIComponent);
+      params[pair[0]] = pair.length === 1 ? pair[0] : pair[1];
+    });
+    return params;
+  }
+
+  function loadFile(filename, callback) {
+    var req = new XMLHttpRequest();
+    var url = encodeURI(filename); 
+    var async = true;
+    req.open("GET", url, async);
+    req.onreadystatechange = function() {
+      if (req.readyState === XMLHttpRequest.DONE) {
+        if (req.status === 200 || req.status === 0) {
+          callback(req.responseText);
+        }
+      }
+    };
+    req.send(null);
+  }
+
+  var params = parseQueryParams();
+  if ('source' in params) {
+    setSource(params.source);
+  } else {
+    loadFile('samples/sample.default.txt', setSource);
+  }
+});
