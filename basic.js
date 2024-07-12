@@ -160,3 +160,156 @@ this.basic = (function() {
     this.method = method;
     this.callback = callback;
   }
+
+  function PRNG() {
+    var S = 2345678901,
+        A = 48271,
+        M = 2147483647, 
+        Q = M / A, 
+        R = M % A; 
+
+    this.next = function PRNG_next() {
+      var hi = S / Q,
+          lo = S % Q,
+          t = A * lo - R * hi;
+      S = (t > 0) ? t : t + M;
+      this.last = S / M;
+      return this.last;
+    };
+    this.seed = function PRNG_seed(x) {
+      S = Math.floor(Math.abs(x));
+    };
+    this.next();
+  }
+
+  function BASICArray(type, dims) {
+
+    var array, dimensions;
+
+    function offset(dims, subscripts) {
+      if (subscripts.length !== dimensions.length) {
+        runtime_error(ERRORS.BAD_SUBSCRIPT);
+      }
+
+      var k, l, s = 0, p, ss;
+      for (k = 0; k < dims.length; k += 1) {
+
+        ss = subscripts[k];
+        if (ss < 0) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+        ss = ss >> 0;
+        if (ss >= dims[k]) {
+          runtime_error(ERRORS.BAD_SUBSCRIPT);
+        }
+
+        p = 1;
+        for (l = k + 1; l < dims.length; l += 1) {
+          p *= dims[l];
+        }
+        s += p * ss;
+      }
+      return s;
+    }
+
+    this.dim = function dim(dims) {
+      if (array) {
+        runtime_error(ERRORS.REDIMED_ARRAY);
+      }
+
+      dimensions = dims.map(function(n) { return (Number(n) >> 0) + 1; });
+
+      var i, len = dimensions.reduce(function(a, b) { return a * b; }),
+          defval = (type === 'string') ? '' : 0;
+
+      array = [];
+      for (i = 0; i < len; i += 1) {
+        array[i] = defval;
+      }
+    };
+
+    this.get = function get(subscripts) {
+      if (!array) {
+        this.dim(subscripts.map(function() { return 10; }));
+      }
+
+
+      return array[offset(dimensions, subscripts)];
+    };
+
+    this.set = function set(subscripts, value) {
+      if (!array) {
+        this.dim(subscripts.map(function() { return 10; }));
+      }
+
+      array[offset(dimensions, subscripts)] = value;
+    };
+
+    this.toJSON = function toJSON() {
+      return { type: type, dimensions: dimensions, array: array };
+    };
+
+    if (dims) {
+      this.dim(dims);
+    }
+  }
+
+  function Stream(string) {
+    this.line = 0;
+    this.column = 0;
+
+    this.match = function match(re) {
+      var m = string.match(re), lines;
+      if (m) {
+        string = string.substring(m[0].length);
+        lines = m[0].split('\n');
+        if (lines.length > 1) {
+          this.line += lines.length - 1;
+          this.column = lines[lines.length - 1].length;
+        } else {
+          this.column += m[0].length;
+        }
+
+        this.lastMatch = m;
+        return m;
+      }
+      return (void 0);
+    };
+
+    this.eof = function eof() {
+      return string.length === 0;
+    };
+  }
+
+  var parseDataInput = (function() {
+
+    var regexWhitespace = /^[ \t]+/,
+        regexQuotedString = /^"([^"]*?)(?:"|(?=\n|\r|$))/,
+        regexUnquotedString = /^[^:,\r\n]*/,
+        regexUnquotedStringIgnoreColons = /^[^,\r\n]*/,
+        regexComma = /^,/;
+
+    return function parseDataInput(stream, items, ignoreColons) {
+
+      do {
+        stream.match(regexWhitespace);
+
+        if (stream.match(regexQuotedString)) {
+
+          items.push(stream.lastMatch[1]);
+        } else if (stream.match(ignoreColons ? regexUnquotedStringIgnoreColons : regexUnquotedString)) {
+
+          items.push(stream.lastMatch[0]);
+        }
+      } while (stream.match(regexComma));
+    };
+  } ());
+
+
+  basic.compile = function compile(source) {
+    "use strict";
+
+    function vartype(name) {
+      var s = name.charAt(name.length - 1);
+      return s === '$' ? 'string' : s === '%' ? 'int' : 'float';
+    }
