@@ -399,3 +399,151 @@ function DOS(tty) {
       hooked_readLine(callback, prompt);
     }
   }
+
+  function dos_readChar(callback) {
+
+    var character = "";
+    if (mode === "r") {
+      if (activebuffer.filepointer >= activebuffer.file.length) {
+        doserror(DOSErrors.END_OF_DATA);
+      }
+
+      character = activebuffer.file[activebuffer.filepointer];
+      activebuffer.filepointer += 1;
+
+      if (monico & MON_I && tty) {
+        hooked_writeChar(character);
+      }
+
+      setTimeout(function() { callback(character); }, 0);
+    } else {
+      hooked_readChar(callback);
+    }
+  }
+
+  function dos_writeChar(c) {
+
+    if (commandMode) {
+      if (c === "\r") {
+        commandMode = false;
+        executeCommand(commandBuffer);
+        commandBuffer = "";
+      } else {
+        commandBuffer += c;
+      }
+      return;
+    } else if (c === "\x04") {
+      commandBuffer = "";
+      commandMode = true;
+      return;
+    }
+
+    if (mode === "w") {
+      var buf, d;
+
+      if (monico & MON_O) {
+        hooked_writeChar(c);
+      }
+
+      buf = activebuffer;
+
+      while (buf.filepointer > buf.file.length) {
+        buf.file += "\x00";
+      }
+
+      if (buf.filepointer === buf.file.length) {
+        buf.file += c;
+      } else {
+        d = buf.file.substring(0, buf.filepointer);
+        d += c;
+        d += buf.file.substring(buf.filepointer + 1);
+        buf.file = d;
+      }
+
+      buf.filepointer += 1;
+    } else {
+      hooked_writeChar(c);
+    }
+  }
+
+  var clockbuf = '';
+  function clock_writeChar(c) {
+    var DAYS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    var MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
+                  'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+    function spad2(s) {
+      return ('  ' + String(s)).slice(-2);
+    }
+    function zpad2(s) {
+      return ('00' + String(s)).slice(-2);
+    }
+    function zpad3(s) {
+      return ('000' + String(s)).slice(-3);
+    }
+
+    var now = new Date();
+    switch (c) {
+    default:
+    case '%': 
+    case '>':
+      clockbuf =
+        DAYS[now.getDay()] + ' ' +
+        MONTHS[now.getMonth()] + ' ' +
+        spad2(now.getDate()) + ' ' +
+        spad2((now.getHours() === 0 ? 12 : now.getHours() > 12 ? now.getHours() - 12 : now.getHours())) + ':' +
+        zpad2(now.getMinutes()) + ':' +
+        zpad2(now.getSeconds()) + ' ' +
+        (now.getHours() < 12 ? 'AM' : 'PM');
+      break;
+    case '&':
+    case '<': 
+      clockbuf =
+        DAYS[now.getDay()] + ' ' +
+        MONTHS[now.getMonth()] + ' ' +
+        spad2(now.getDate()) + ' ' +
+        spad2(now.getHours()) + ':' +
+        zpad2(now.getMinutes()) + ':' +
+        zpad2(now.getSeconds()) + ' ' +
+        (now.getHours() < 12 ? 'AM' : 'PM');
+      break;
+    case ' ': 
+      clockbuf =
+        zpad2(now.getMonth()+1) + '/' +
+        zpad2(now.getDate()) + ' ' +
+        zpad2(now.getHours()) + ';' +
+        zpad2(now.getMinutes()) + ';' +
+        zpad2(now.getSeconds()) + '.' +
+        zpad3(now.getMilliseconds());
+      break;
+    case '#': 
+      clockbuf = [
+        now.getMonth()+1,
+        now.getDay(),
+        now.getDate(),
+        now.getHours(),
+        now.getMinutes(),
+        now.getSeconds()
+      ].join(',');
+      break;
+    }
+    clockbuf += '\r';
+  }
+  function clock_readLine(callback, prompt) {
+    tty.writeString(prompt);
+    var tmp = clockbuf;
+    clockbuf = '';
+
+    tmp = Object.assign(new String(tmp), {ignoreColons: true});
+
+    setTimeout(function() { callback(tmp); }, 0);
+  }
+  function clock_readChar(callback) {
+    if (!clockbuf.length) {
+      setTimeout(function() { callback('\r'); }, 0);
+    } else {
+      var c = clockbuf.substring(0, 1);
+      clockbuf = clockbuf.slice(1);
+      setTimeout(function() { callback(c); }, 0);
+    }
+  }
+}
