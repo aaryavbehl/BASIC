@@ -757,3 +757,46 @@ this.getButtonState = function getButtonState(btn) {
 this.focus = function focus() {
   keyboardElement.focus();
 };
+
+this.readLine = function readLine(callback, prompt) {
+  self.writeString(prompt);
+
+  lineCallback = callback;
+  self.showCursor();
+  self.focus();
+};
+
+this.readChar = function readChar(callback) {
+
+  if (keyboardRegister & 0x80) {
+    keyboardRegister = keyboardRegister & 0x7f;
+
+    setTimeout(function() { callback(String.fromCharCode(keyboardRegister)); }, 0);
+  } else {
+    charCallback = callback;
+    self.showCursor();
+    self.focus();
+  }
+};
+
+
+this.getKeyboardRegister = function getKeyboardRegister() {
+  self.focus();
+  return keyboardRegister;
+};
+
+
+this.clearKeyboardStrobe = function clearKeyboardStrobe() {
+  keyboardRegister = keyboardRegister & 0x7f;
+  return keyboardRegister | (keyDown ? 0x80 : 0x00);
+};
+
+init(false, 24, 40);
+
+keyboardElement.addEventListener('keydown', handleKeyDown);
+keyboardElement.addEventListener('keyup', handleKeyUp);
+
+setInterval(function blinkFlash() {
+  styleElem.classList.toggle('jsb-flash');
+}, 250);
+}
