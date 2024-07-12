@@ -550,4 +550,210 @@ function onKey(code) {
 
 } 
 
-    
+function toAppleKey(e) {
+
+  function ord(c) { return c.charCodeAt(0); }
+
+  switch (e.code) {
+
+    case 'Backspace': return 127;
+    case 'Tab': return 9; 
+    case 'Enter': return 13;
+    case 'Escape': return 27;
+    case 'ArrowLeft': return 8;
+    case 'ArrowUp': return 11;
+    case 'ArrowRight': return 21;
+    case 'ArrowDown': return 10;
+    case 'Delete': return 127;
+    case 'Clear': return 24;
+
+    case 'Numpad0': return 0x30;
+    case 'Numpad1': return 0x31;
+    case 'Numpad2': return 0x32;
+    case 'Numpad3': return 0x33;
+    case 'Numpad4': return 0x34;
+    case 'Numpad5': return 0x35;
+    case 'Numpad6': return 0x36;
+    case 'Numpad7': return 0x37;
+    case 'Numpad8': return 0x38;
+    case 'Numpad9': return 0x39;
+
+    case 'Digit0':
+    case 'Digit1':
+    case 'Digit2':
+    case 'Digit3':
+    case 'Digit4':
+    case 'Digit5':
+    case 'Digit6':
+    case 'Digit7':
+    case 'Digit8':
+    case 'Digit9':
+      var digit = e.code.substring(5);
+      if (e.ctrlKey) {
+        if (e.shiftKey) {
+          switch (digit) {
+            case '2': return 0; 
+            case '6': return 30;
+          }
+        }
+        return (void 0);
+      } else if (e.shiftKey) {
+        return ')!@#$%^&*('.charCodeAt(ord(digit) - ord('0'));
+      } else {
+        return ord(digit);
+      }
+
+    case 'KeyA':
+    case 'KeyB':
+    case 'KeyC':
+    case 'KeyD':
+    case 'KeyE':
+    case 'KeyF':
+    case 'KeyG':
+    case 'KeyH':
+    case 'KeyI':
+    case 'KeyJ':
+    case 'KeyK':
+    case 'KeyL':
+    case 'KeyM':
+    case 'KeyN':
+    case 'KeyO':
+    case 'KeyP':
+    case 'KeyQ':
+    case 'KeyR':
+    case 'KeyS':
+    case 'KeyT':
+    case 'KeyU':
+    case 'KeyV':
+    case 'KeyW':
+    case 'KeyX':
+    case 'KeyY':
+    case 'KeyZ':
+      var letter = e.code.substring(3);
+      if (e.ctrlKey) {
+        return ord(letter) - 0x40; 
+      } else if (capsLock || e.shiftKey) {
+        return ord(letter); 
+      } else {
+        return ord(letter) + 0x20;
+      }
+
+    case 'Space': return ord(' ');
+    case 'Semicolon': return e.shiftKey ? ord(':') : ord(';');
+    case 'Equal': return e.shiftKey ? ord('+') : ord('=');
+    case 'Comma': return e.shiftKey ? ord('<') : ord(',');
+    case 'Minus': return e.ctrlKey ? 31 : e.shiftKey ? ord('_') : ord('-');
+    case 'Period': return e.shiftKey ? ord('>') : ord('.');
+    case 'Slash': return e.shiftKey ? ord('?') : ord('/');
+    case 'Backquote': return e.shiftKey ? ord('~') : ord('`');
+    case 'BracketLeft': return e.ctrlKey ? 27 : e.shiftKey ? ord('{') : ord('[');
+    case 'Backslash': return e.ctrlKey ? 28 : e.shiftKey ? ord('|') : ord('\\');
+    case 'BracketRight': return e.ctrlKey ? 29 : e.shiftKey ? ord('}') : ord(']');
+    case 'Quote': return e.shiftKey ? ord('"') : ord('\'');
+    case 'NumpadClear': return 24;
+    case 'NumpadAdd': return ord('+');
+    case 'NumpadSubtract': return ord('-');
+    case 'NumpadMultiply': return ord('*');
+    case 'NumpadDivide': return ord('/');
+    case 'NumpadDecimal': return ord('.');
+    case 'NumpadEnter': return 13;
+    default:
+      break;
+  }
+
+  return -1;
+}
+
+function isBrowserKey(e) {
+  return e.code === 'Tab' || e.code === 'F5' || e.metaKey;
+}
+
+function handleKeyDown(e) {
+  if (!e.code || isBrowserKey(e))
+    return true;
+
+  var handled = false, code;
+
+  switch (e.code) {
+
+    case 'CapsLock':
+      capsLock = !capsLock;
+      handled = true;
+      break;
+
+    case 'AltLeft':
+    case 'Home': buttonState[0] = 255; handled = true; break;
+    case 'AltRight':
+    case 'End': buttonState[1] = 255; handled = true; break;
+    case 'PageUp': buttonState[2] = 255; handled = true; break;
+    case 'Shift':
+    case 'ShiftLeft':
+    case 'ShiftRight':
+    buttonState[2] = 255; handled = true; break;
+    case 'PageDown': buttonState[3] = 255; handled = true; break;
+
+    default:
+      code = toAppleKey(e);
+      if (code !== -1) {
+        keyDown = true;
+        onKey(code);
+        handled = true;
+      }
+      break;
+  }
+
+  if (handled) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+
+  return !handled;
+}
+
+function handleKeyUp(e) {
+  if (!e.code || isBrowserKey(e))
+    return true;
+
+  var handled = false,
+      code;
+
+  switch (e.code) {
+
+    case 'CapsLock':
+      handled = true;
+      break;
+
+    case 'AltLeft':
+    case 'Home': buttonState[0] = 0; handled = true; break;
+    case 'AltRight':
+    case 'End': buttonState[1] = 0; handled = true; break;
+    case 'PageUp': buttonState[2] = 0; handled = true; break;
+    case 'Shift': buttonState[2] = 0; handled = true; break;
+    case 'PageDown': buttonState[3] = 0; handled = true; break;
+
+    default:
+      code = toAppleKey(e);
+      if (code !== -1) {
+        keyDown = false;
+        handled = true;
+      }
+      break;
+  }
+
+  if (handled) {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+
+  return !handled;
+}
+
+
+this.getButtonState = function getButtonState(btn) {
+  return buttonState[btn];
+};
+
+
+this.focus = function focus() {
+  keyboardElement.focus();
+};
