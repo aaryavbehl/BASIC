@@ -356,4 +356,198 @@ function TTY(screenElement, keyboardElement) {
       case 19: 
       case 20:
         break;
+        
+      case 21:
+      if (firmwareActive) {
+
+        init(false, 24, 40);
+      }
+      break;
+
+    case 22: 
+      if (firmwareActive) {
+
+        scrollDown();
+      }
+      break;
+
+    case 23:
+      if (firmwareActive) {
+
+        scrollUp();
+      }
+      break;
+
+    case 24: 
+      if (firmwareActive) {
+
+        mousetext = false;
+      }
+      break;
+
+    case 25: 
+      if (firmwareActive) {
+
+        cursorX = self.textWindow.left;
+        cursorY = self.textWindow.top;
+      }
+      break;
+
+    case 26: 
+      if (firmwareActive) {
+
+        for (x = 0; x < self.textWindow.width; x += 1) {
+          setCellChar(self.textWindow.left + x, cursorY, 0x20);
+        }
+      }
+      break;
+
+    case 27: 
+      if (firmwareActive) {
+
+        mousetext = true;
+      }
+      break;
+
+    case 28: 
+      if (firmwareActive) {
+
+        cursorX += 1;
+        if (cursorX > (self.textWindow.left + self.textWindow.width)) {
+          cursorX -= self.textWindow.width;
+          cursorY += 1;
+          if (cursorY > self.textWindow.top + self.textWindow.height) {
+            cursorY = self.textWindow.top + self.textWindow.height;
+          }
+        }
+      }
+      break;
+
+    case 29: 
+      if (firmwareActive) {
+
+        self.clearEOL();
+      }
+      break;
+
+    case 30: 
+    case 31:
+      break;
+
+    default:
+      setCellChar(cursorX, cursorY, code);
+      self.cursorRight();
+      break;
+  }
+};
+
+this.writeString = function writeString(s) {
+  var i;
+  for (i = 0; i < s.length; i += 1) {
+    this.writeChar(s.charAt(i));
+  }
+};
+
+this.getScreenSize = function getScreenSize() {
+  return { width: screenWidth, height: screenHeight };
+};
+
+this.getCursorPosition = function getCursorPosition() {
+  return { x: cursorX, y: cursorY };
+};
+
+this.setCursorPosition = function setCursorPosition(x, y) {
+  if (x !== undefined) {
+    x = Math.min(Math.max(Math.floor(x), 0), screenWidth - 1);
+  } else {
+    x = cursorX;
+  }
+
+  if (y !== undefined) {
+    y = Math.min(Math.max(Math.floor(y), 0), screenHeight - 1);
+  } else {
+    y = cursorY;
+  }
+
+  if (x === cursorX && y === cursorY) {
+
+    return;
+  }
+
+  cursorX = x;
+  cursorY = y;
+  updateCursor();
+};
+
+this.showCursor = function showCursor() {
+  cursorVisible = true;
+  cursorInterval = setInterval(function() {
+    cursorState = !cursorState;
+    updateCursor();
+  }, 500);
+};
+
+this.hideCursor = function hideCursor() {
+  clearInterval(cursorInterval);
+  cursorVisible = false;
+  updateCursor();
+
+};
+
+this.splitScreen = function splitScreen(splitAt) {
+  splitPos = splitAt;
+
+  var y;
+
+  for (y = 0; y < screenHeight; y += 1) {
+    screenRow[y].style.visibility = (y < splitPos) ? "hidden" : "";
+  }
+
+};
+
+function onKey(code) {
+  var cb, c, s;
+
+  keyboardRegister = code | 0x80;
+
+  if (charCallback) {
+    keyboardRegister = keyboardRegister & 0x7f;
+
+    cb = charCallback;
+    charCallback = undefined;
+    self.hideCursor();
+    cb(String.fromCharCode(code));
+  } else if (lineCallback) {
+    keyboardRegister = keyboardRegister & 0x7f;
+
+    if (code >= 32 && code <= 127) {
+      c = String.fromCharCode(code);
+      inputBuffer.push(c);
+      self.writeChar(c); 
+    } else {
+      switch (code) {
+        case 8:  
+          if (inputBuffer.length > 0) {
+            inputBuffer.pop();
+            self.setCursorPosition(Math.max(self.getCursorPosition().x - 1, 0), self.getCursorPosition().y);
+          }
+          break;
+
+        case 13: 
+
+          s = inputBuffer.join("");
+          inputBuffer = [];
+          self.writeString("\r");
+
+          cb = lineCallback;
+          lineCallback = undefined;
+          self.hideCursor();
+          cb(s);
+          break;
+      }
+    }
+  }
+
+} 
+
     
