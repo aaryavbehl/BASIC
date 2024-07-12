@@ -506,7 +506,7 @@ this.basic = (function() {
         }
         runtime_error(ERRORS.RETURN_WITHOUT_GOSUB);
       },
-      
+
       'pop': function POP() {
         var stack_record = state.stack.pop();
         if (!{}.hasOwnProperty.call(stack_record, 'gosub_return')) {
@@ -523,4 +523,210 @@ this.basic = (function() {
           for_next: state.stmt_index,
           line_number: state.line_number
         });
+      },
+
+      'next': function NEXT(/* ...varnames */) {
+        var varnames = Array.prototype.slice.call(arguments),
+                    varname, stack_record, value;
+        do {
+          varname = varnames.shift();
+
+          do {
+            stack_record = state.stack.pop();
+            if (!stack_record || !{}.hasOwnProperty.call(stack_record, 'for_next')) {
+              runtime_error(ERRORS.NEXT_WITHOUT_FOR);
+            }
+          } while (varname !== (void 0) && stack_record.index !== varname);
+
+          value = state.variables[stack_record.index];
+
+          value = value + stack_record.step;
+          state.variables[stack_record.index] = value;
+
+          if (!(stack_record.step > 0 && value > stack_record.to) &&
+                        !(stack_record.step < 0 && value < stack_record.to) &&
+                        !(stack_record.step === 0 && value === stack_record.to)) {
+            state.stack.push(stack_record);
+            state.stmt_index = stack_record.for_next;
+            state.line_number = stack_record.line_number;
+            return;
+          }
+        } while (varnames.length);
+      },
+
+      'if': function IF(value) {
+        if (!value) {
+          throw new NextLine();
+        }
+      },
+
+      'stop': function STOP() {
+        runtime_error(ERRORS.INTERRUPT);
+      },
+
+      'end': function END() {
+        throw new EndProgram();
+      },
+
+      'onerr_goto': function ONERR_GOTO(line) {
+        state.onerr_handler = line;
+        throw new NextLine();
+      },
+
+      'resume': function RESUME() {
+        var stack_record = state.stack.pop();
+        if (!{}.hasOwnProperty.call(stack_record, 'resume_stmt_index')) {
+          runtime_error(ERRORS.SYNTAX_ERROR);
+          return;
+        }
+        state.line_number = stack_record.resume_line_number;
+        state.stmt_index = stack_record.resume_stmt_index;
+      },
+
+      'restore': function RESTORE() {
+        state.data_index = 0;
+      },
+
+      'read': function READ(/* ...lvalues */) {
+        var lvalues = Array.prototype.slice.call(arguments);
+        while (lvalues.length) {
+          if (state.data_index >= state.data.length) {
+            runtime_error(ERRORS.OUT_OF_DATA);
+          }
+          (lvalues.shift())(state.data[state.data_index]);
+          state.data_index += 1;
+        }
+      },
+
+      'print': function PRINT(/* ...strings */) {
+        var args = Array.prototype.slice.call(arguments), arg;
+        while (args.length) {
+          arg = args.shift();
+          if (typeof arg === 'function') {
+            arg = arg();
+          }
+          env.tty.writeString(String(arg));
+        }
+      },
+
+      'comma': function COMMA() {
+        return function() {
+          var cur = env.tty.getCursorPosition().x,
+                        pos = (cur + 16) - (cur % 16);
+          if (pos >= env.tty.getScreenSize().width) {
+            return '\r';
+          } else {
+            return ' '.repeat(pos - cur);
+          }
+        };
+      },
+
+      'spc': function SPC(n) {
+        n = n >> 0;
+        if (n < 0 || n > 255) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+        return function() {
+          return ' '.repeat(n);
+        };
+      },
+
+      'tab': function TAB(n) {
+        n = n >> 0;
+        if (n < 0 || n > 255) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+        if (n === 0) { n = 256; }
+
+        return function() {
+          var pos = env.tty.getCursorPosition().x + 1;
+          return ' '.repeat(pos >= n ? 0 : n - pos);
+        };
+      },
+
+      'get': function GET(lvalue) {
+        throw new BlockingInput(env.tty.readChar, function(entry) { lvalue(entry); });
+      },
+
+      'input': function INPUT(prompt /* , ...varlist */) {
+        var varlist = Array.prototype.slice.call(arguments, 1); 
+        var im = function(cb) { return env.tty.readLine(cb, prompt); };
+        var ih = function(entry) {
+          var parts = [],
+              stream = new Stream(entry);
+
+          parseDataInput(stream, parts, entry.ignoreColons);
+
+          while (varlist.length && parts.length) {
+            try {
+              varlist.shift()(parts.shift());
+            } catch (e) {
+              if (e instanceof basic.RuntimeError &&
+                  e.code === ERRORS.TYPE_MISMATCH[0]) {
+                e.code = ERRORS.REENTER[0];
+                e.message = ERRORS.REENTER[1];
+              }
+              throw e;
+            }
+          }
+
+          if (varlist.length) {
+            prompt = '??';
+            throw new BlockingInput(im, ih);
+          }
+
+          if (parts.length) {
+            env.tty.writeString('?EXTRA IGNORED\r');
+          }
+        };
+        throw new BlockingInput(im, ih);
+      },
+
+      'home': function HOME() {
+        if (env.tty.clearScreen) { env.tty.clearScreen(); }
+      },
+
+      'htab': function HTAB(pos) {
+        if (pos < 1 || pos >= env.tty.getScreenSize().width + 1) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+
+        if (env.tty.textWindow) {
+          pos += env.tty.textWindow.left;
+        }
+
+        env.tty.setCursorPosition(pos - 1, void 0);
+      },
+
+      'vtab': function VTAB(pos) {
+        if (pos < 1 || pos >= env.tty.getScreenSize().height + 1) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+        env.tty.setCursorPosition(void 0, pos - 1);
+      },
+
+      'inverse': function INVERSE() {
+        if (env.tty.setTextStyle) { env.tty.setTextStyle(env.tty.TEXT_STYLE_INVERSE); }
+      },
+      'flash': function FLASH() {
+        if (env.tty.setTextStyle) { env.tty.setTextStyle(env.tty.TEXT_STYLE_FLASH); }
+      },
+      'normal': function NORMAL() {
+        if (env.tty.setTextStyle) { env.tty.setTextStyle(env.tty.TEXT_STYLE_NORMAL); }
+      },
+      'text': function TEXT() {
+        if (env.display) {
+          env.display.setState("graphics", false);
+        }
+
+        if (env.tty.textWindow) {
+
+          env.tty.textWindow = {
+            left: 0,
+            top: 0,
+            width: env.tty.getScreenSize().width,
+            height: env.tty.getScreenSize().height
+          };
+        }
+        env.tty.setCursorPosition(0, env.tty.getScreenSize().height - 1);
       },
