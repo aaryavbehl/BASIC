@@ -153,3 +153,207 @@ function TTY(screenElement, keyboardElement) {
         }
       }
     };
+
+    this.clearEOL = function clearEOL() {
+        var x;
+        for (x = cursorX; x < self.textWindow.left + self.textWindow.width; x += 1) {
+          setCellChar(x, cursorY, 0x20);
+        }
+      };
+    
+      this.clearEOS = function clearEOS() {
+        var x, y;
+        for (x = cursorX; x < self.textWindow.left + self.textWindow.width; x += 1) {
+          setCellChar(x, cursorY, 0x20);
+        }
+        for (y = cursorY + 1; y < self.textWindow.top + self.textWindow.height; y += 1) {
+          for (x = self.textWindow.left; x < self.textWindow.left + self.textWindow.width; x += 1) {
+            setCellChar(x, y, 0x20);
+          }
+        }
+      };
+    
+      this.setFirmwareActive = function setFirmwareActive(active) {
+        if (active !== firmwareActive)
+          init(active, 24, active ? 80 : 40);
+      };
+    
+      this.isFirmwareActive = function isFirmwareActive() {
+        return firmwareActive;
+      };
+    
+      this.isAltCharset = function isAltCharset() {
+        return mousetext;
+      };
+    
+      function scrollUp() {
+        var x, y, cell;
+    
+        for (y = self.textWindow.top; y < self.textWindow.top + self.textWindow.height - 1; y += 1) {
+          for (x = self.textWindow.left; x < self.textWindow.left + self.textWindow.width; x += 1) {
+    
+            cell = screenGrid[x + screenWidth * (y + 1)];
+            setCellByte(x, y, cell.byte);
+          }
+        }
+    
+        y = self.textWindow.top + (self.textWindow.height - 1);
+        for (x = self.textWindow.left; x < self.textWindow.left + self.textWindow.width; x += 1) {
+          setCellChar(x, y, 0x20);
+        }
+      }
+    
+      function scrollDown() {
+        var x, y, cell;
+    
+        for (y = self.textWindow.top + self.textWindow.height - 1; y > self.textWindow.top; y -= 1) {
+          for (x = self.textWindow.left; x < self.textWindow.left + self.textWindow.width; x += 1) {
+    
+            cell = screenGrid[x + screenWidth * (y - 1)];
+            setCellByte(x, y, cell.byte);
+          }
+        }
+    
+        y = self.textWindow.top;
+        for (x = self.textWindow.left; x < self.textWindow.left + self.textWindow.width; x += 1) {
+          setCellChar(x, y, 0x20);
+        }
+      }
+    
+      this.scrollScreen = function scrollScreen() {
+        scrollUp();
+      };
+    
+      this.setTextStyle = function setTextStyle(style) {
+        curStyle = style;
+      };
+
+  function updateCursor() {
+    if (cursorVisible && cursorState) {
+      var elem = screenGrid[cursorY * screenWidth + cursorX].elem;
+      if (elem !== cursorElement.parentNode) {
+        elem.appendChild(cursorElement);
+      }
+    } else if (cursorElement.parentNode) {
+      cursorElement.parentNode.removeChild(cursorElement);
+    }
+  }
+
+  this.cursorDown = function cursorDown() {
+    cursorY += 1;
+    if (cursorY >= self.textWindow.top + self.textWindow.height) {
+      cursorY = self.textWindow.top + self.textWindow.height - 1;
+      if (self.autoScroll) {
+        self.scrollScreen();
+      }
+    }
+    updateCursor();
+  };
+
+  this.cursorLeft = function cursorLeft() {
+    cursorX -= 1;
+    if (cursorX < self.textWindow.left) {
+      cursorX += self.textWindow.width;
+      cursorY -= 1;
+      if (cursorY < self.textWindow.top) {
+        cursorY = self.textWindow.top;
+      }
+    }
+    updateCursor();
+  };
+
+  this.cursorUp = function cursorUp() {
+    cursorY -= 1;
+    if (cursorY < self.textWindow.top) {
+      cursorY = self.textWindow.top;
+    }
+    updateCursor();
+  };
+
+
+  this.cursorRight = function cursorRight() {
+    cursorX += 1;
+    if (cursorX >= self.textWindow.left + self.textWindow.width) {
+      cursorX = self.textWindow.left;
+      self.cursorDown();
+    }
+    updateCursor();
+  };
+
+  this.writeChar = function writeChar(c) {
+    var code = c.charCodeAt(0),
+            x, y;
+
+    switch (code) {
+      case 0:
+      case 1:
+      case 2:
+      case 3:
+      case 4: 
+      case 5:
+      case 6:
+      case 7:
+
+        break;
+        case 8: 
+        self.cursorLeft();
+        break;
+
+      case 9:
+        break;
+
+      case 10: 
+        self.cursorDown();
+        break;
+
+      case 11: 
+        if (firmwareActive) {
+          self.clearEOS();
+        }
+        break;
+
+      case 12:
+        if (firmwareActive) {
+
+          self.clearScreen();
+        }
+        break;
+
+      case 13: 
+        cursorX = self.textWindow.left;
+        self.cursorDown();
+        break;
+
+      case 14: 
+        if (firmwareActive) {
+          curStyle = self.TEXT_STYLE_NORMAL;
+        }
+        break;
+
+      case 15: 
+        if (firmwareActive) {
+          curStyle = self.TEXT_STYLE_INVERSE;
+        }
+        break;
+
+      case 16:
+        break;
+
+      case 17: 
+        if (firmwareActive) {
+
+          init(true, 24, 40);
+        }
+        break;
+
+      case 18: 
+        if (firmwareActive) {
+
+          init(true, 24, 80);
+        }
+        break;
+
+      case 19: 
+      case 20:
+        break;
+    
