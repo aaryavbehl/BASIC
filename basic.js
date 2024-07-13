@@ -1829,4 +1829,163 @@ this.basic = (function() {
                   case kws.WAIT:    
                   case kws.AMPERSAND:       
                     throw parse_error("Native interop statement not supported: " + keyword);
-    
+
+               case kws.LOAD:    
+               case kws.RECALL:  
+               case kws.SAVE:   
+               case kws.STORE:   
+               case kws.SHLOAD:  
+                 throw parse_error("Tape statement not supported: " + keyword);
+
+               default:
+                 throw parse_error("Syntax error: " + keyword);
+             }
+           }
+
+           var parseProgram = function() {
+     
+             var program = {
+               statements: [], 
+               data: [],       
+               jump: []      
+             };
+     
+             function mkfun(js) {
+               var fun; 
+               eval('fun = (function (){' + js + '});');
+               return fun;
+             }
+     
+             function empty_statement() { }
+
+             function parseStatement() {
+               if (test('data')) {
+                 program.data = program.data.concat(match('data'));
+                 return undefined;
+               } else if (test('remark', void 0, true)) {
+                 return undefined;
+               } else if (test('reserved') || test('identifier')) {
+                 return mkfun(parseCommand());
+               } else {
+
+                 return empty_statement;
+               }
+             }
+
+             function parseLine() {
+               var num = match('lineNumber');
+               var statements = [];
+               var statement = parseStatement();
+               if (statement) statements.push(statement);
+               while (test('separator', ':', true)) {
+                 statement = parseStatement();
+                 if (statement) statements.push(statement);
+               }
+               insertLine(num, statements);
+             }
+     
+             function insertLine(number, statements) {
+               var remove = 0;
+               for (var i = 0, len = program.statements.length; i < len; ++i) {
+                 if (typeof program.statements[i] !== 'number')
+                   continue;
+                 if (program.statements[i] < number)
+                   continue;
+                 if (program.statements[i] === number) {
+                   var n = i;
+                   do {
+                     ++n;
+                     ++remove;
+                   } while (n < len && typeof program.statements[n] !== 'number');
+                 }
+                 break;
+               }
+               var args = [i, remove, number].concat(statements);
+               program.statements.splice.apply(program.statements, args);
+             }
+
+             while (!endOfProgram()) {
+               parseLine();
+             }
+
+             program.statements.forEach(function(stmt, index) {
+               if (typeof stmt === 'number') {
+                 program.jump[stmt] = index;
+               }
+             });
+     
+             program.variable_identifiers = Object.keys(identifiers.variables);
+             program.array_identifiers = Object.keys(identifiers.arrays);
+     
+             return program;
+           };
+     
+           return parseProgram();
+         } ());
+     
+         program.init = function init(environment) {
+
+           env = environment;
+           state = {
+             variables: {},
+             arrays: {},
+             functions: {},
+             data: this.data,
+             data_index: 0,
+             stmt_index: 0,
+             line_number: 0,
+             stack: [],
+             prng: new PRNG(),
+     
+             onerr_code: 255,
+             onerr_handler: void 0,
+             trace_mode: false,
+     
+             input_continuation: null,
+     
+             clear: function() {
+               program.variable_identifiers.forEach(function(identifier) {
+                 state.variables[identifier] = vartype(identifier) === 'string' ? '' : 0;
+               });
+     
+               program.array_identifiers.forEach(function(identifier) {
+                 state.arrays[identifier] = new BASICArray(vartype(identifier));
+               });
+     
+               state.functions = {};
+               state.data_index = 0;
+             }
+           };
+     
+           state.clear();
+     
+           state.parsevar = function parsevar(name, subscripts, input) {
+     
+             if (arguments.length === 2) {
+               input = arguments[1];
+               subscripts = void 0;
+             }
+             var value;
+     
+             switch (vartype(name)) {
+               case 'string':
+                 value = input;
+                 break;
+     
+               case 'int':
+                 value = Number(input);
+                 if (!isFinite(value)) { runtime_error(ERRORS.TYPE_MISMATCH); }
+                 value = lib.toint(value);
+                 break;
+     
+               case 'float':
+                 value = Number(input);
+                 if (!isFinite(value)) { runtime_error(ERRORS.TYPE_MISMATCH); }
+                 break;
+             }
+     
+             if (subscripts) {
+               state.arrays[name].set(subscripts, value);
+             } else {
+               state.variables[name] = value;
+             }
