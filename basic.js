@@ -1676,4 +1676,157 @@ this.basic = (function() {
                     } while (test("operator", ",", true));
         
                     return slib('read', args.join(','));
+
+                    case kws.PRINT: 
+                    args = [];
+                    trailing = true;
+                    while (!endOfStatement()) {
+                      if (test('operator', ';', true)) {
+                        trailing = false;
+                      } else if (test('operator', ',', true)) {
+                        trailing = false;
+                        args.push('lib.comma()');
+                      } else if (test('reserved', kws.SPC) || test('reserved', kws.TAB)) {
+                        trailing = false;
+                        keyword = match('reserved');
+                        match("operator", "(");
+                        expr = parseNumericExpression();
+                        match("operator", ")");
+        
+                        args.push('lib.' + (keyword === kws.SPC ? 'spc' : 'tab') + '(' + expr + ')');
+                      } else {
+                        trailing = true;
+                        args.push(parseAnyExpression());
+                      }
+                    }
+                    if (trailing) {
+                      args.push(quote('\r'));
+                    }
+        
+                    return slib('print', args.join(','));
+        
+                  case kws.INPUT: 
+                    prompt = '?';
+                    if (test('string')) {
+                      prompt = match('string');
+                      match("operator", ";");
+                    }
+        
+                    args = [];
+        
+                    do {
+                      args.push(parsePValue());
+                    } while (test("operator", ",", true));
+        
+                    return slib('input', quote(prompt), args.join(','));
+        
+                  case kws.GET: 
+                    return slib('get', parsePValue());
+        
+                  case kws.HOME: 
+                    return slib('home');
+        
+                  case kws.HTAB:  
+                    return slib('htab', parseNumericExpression());
+        
+                  case kws.VTAB: 
+                    return slib('vtab', parseNumericExpression());
+        
+                  case kws.INVERSE:  
+                    return slib('inverse');
+        
+                  case kws.FLASH: 
+                    return slib('flash');
+        
+                  case kws.NORMAL:  
+                    return slib('normal');
+        
+                  case kws.TEXT: 
+                    return slib('text');
+               
+                  case kws.NOTRACE:  
+                    return slib('notrace');
+        
+                  case kws.TRACE:  
+                    return slib('trace');
+             
+                  case kws.GR:  
+                    return slib('gr');
+        
+                  case kws.COLOR:  
+                    return slib('color', parseNumericExpression());
+        
+                  case kws.PLOT: 
+                    return slib('plot',
+                                    parseNumericExpression(),
+                                    match("operator", ",") && parseNumericExpression());
+        
+                  case kws.HLIN:  
+                    return slib('hlin',
+                                    parseNumericExpression(),
+                                    match("operator", ",") && parseNumericExpression(),
+                                    match("reserved", kws.AT) && parseNumericExpression());
+        
+                  case kws.VLIN:  
+                    return slib('vlin',
+                                    parseNumericExpression(),
+                                    match("operator", ",") && parseNumericExpression(),
+                                    match("reserved", kws.AT) && parseNumericExpression());
+
+                  case kws.HGR:   
+                    return slib('hgr');
+        
+                  case kws.HGR2:  
+                    return slib('hgr2');
+        
+                  case kws.HCOLOR:  
+                    return slib('hcolor', parseNumericExpression());
+        
+                  case kws.HPLOT:  
+                    is_to = test('reserved', kws.TO, true);
+        
+                    args = [];
+                    do {
+                      args.push(parseNumericExpression());
+                      match("operator", ",");
+                      args.push(parseNumericExpression());
+                    } while (test('reserved', kws.TO, true));
+        
+                    return slib(is_to ? 'hplot_to' : 'hplot', args.join(','));
+      
+                  case kws.PR:  
+                    return slib('pr#', parseNumericExpression());
+        
+                  case kws.CALL: 
+                    return slib('call', parseNumericExpression());
+        
+                  case kws.POKE:  
+                    return slib('poke',
+                                    parseNumericExpression(),
+                                    match("operator", ",") && parseNumericExpression());
+        
+                  case kws.SPEED:  
+                    return slib('speed', parseNumericExpression());
+                
+                  case kws.LIST:  
+                    throw parse_error("Introspection statement not supported: " + keyword);
+                                 
+                  case kws.ROT:   
+                  case kws.SCALE: 
+                  case kws.DRAW:   
+                  case kws.XDRAW:  
+                    throw parse_error("Display statement not supported: " + keyword);
+        
+                  case kws.CONT: 
+                  case kws.DEL:   
+                  case kws.NEW:   
+                  case kws.RUN:   
+                    throw parse_error("Interpreter statement not supported: " + keyword);
+        
+                  case kws.HIMEM:  
+                  case kws.IN:    
+                  case kws.LOMEM:  
+                  case kws.WAIT:    
+                  case kws.AMPERSAND:       
+                    throw parse_error("Native interop statement not supported: " + keyword);
     
