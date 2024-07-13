@@ -1291,3 +1291,203 @@ this.basic = (function() {
                     quote(name) + ',value);})';
     }
   }
+
+  parseExpression = (function() {
+
+        function parseUserfunction() {
+          var name = match('identifier'),
+              type = vartype(name) === 'string' ? 'string' : 'number',
+              expr;
+
+          match("operator", "(");
+          expr = type === 'string' ? parseStringExpression() : parseNumericExpression();
+          match("operator", ")");
+
+          return { source: 'lib.fn(' + quote(name) + ',' + expr + ')', type: type };
+        }
+
+        function parsefunction(name) {
+          if (!{}.hasOwnProperty.call(funlib, name)) {
+            throw parse_error("Undefined function: " + name);
+          }
+
+          match("operator", "(");
+
+          var func = funlib[name],
+              funcdesc = func.signature.slice(),
+              rtype = funcdesc.shift(),
+              args = [],
+              atype;
+
+          while (funcdesc.length) {
+            atype = funcdesc.shift();
+
+            if (/\?$/.test(atype)) {
+              if (test('operator', ')')) {
+                break;
+              } else {
+                atype = atype.substring(0, atype.length - 1);
+              }
+            }
+            if (args.length) {
+              match("operator", ",");
+            }
+
+            if (atype === 'string') {
+              args.push(parseStringExpression());
+            } else if (atype === 'number') {
+              args.push(parseNumericExpression());
+            } else {
+              throw new Error("Invalid function definition");
+            }
+          }
+
+          match("operator", ")");
+
+          return { source: 'funlib.' + name + '(' + args.join(',') + ')', type: rtype };
+        }
+
+        function parseFinalExpression() {
+          if (test('number')) {
+            return { source: String(match('number')), type: 'number' };
+          } else if (test('string')) {
+            return { source: quote(match('string')), type: 'string' };
+          } else if (test('reserved', kws.FN, true)) {
+            return parseUserfunction();
+          } else if (test('reserved')) {
+            return parsefunction(match('reserved'));
+          } else if (test('identifier')) {
+            var name = match('identifier'),
+                type = vartype(name) === 'string' ? 'string' : 'number',
+                subscripts = parseSubscripts();
+            if (subscripts) {
+              identifiers.arrays[name] = true;
+              return { source: 'state.arrays[' + quote(name) + '].get([' + subscripts + '])', type: type };
+            } else {
+              identifiers.variables[name] = true;
+              return { source: 'state.variables[' + quote(name) + ']', type: type };
+            }
+          } else {
+            match("operator", "(");
+            var expr = parseExpression();
+            match("operator", ")");
+            return expr;
+          }
+        }
+
+        function parseUnaryExpression() {
+          var rhs, op;
+
+          if (test('operator', '+') || test('operator', '-')) {
+            op = match('operator');
+          } else if (test('reserved', kws.NOT)) {
+            op = match('reserved');
+          }
+
+          if (op) {
+            rhs = parseUnaryExpression();
+
+            enforce_type(rhs.type, 'number');
+
+            switch (op) {
+              case "+": return rhs;
+              case "-": return { source: '(-' + rhs.source + ')', type: 'number' };
+              case kws.NOT: return { source: '((!' + rhs.source + ')?1:0)', type: 'number' };
+            }
+          }
+          return parseFinalExpression();
+        }
+
+        function parsePowerExpression() {
+          var lhs = parseUnaryExpression(), rhs;
+          while (test('operator', '^', true)) {
+            rhs = parseUnaryExpression();
+
+            enforce_type(lhs.type, 'number');
+            enforce_type(rhs.type, 'number');
+
+            lhs = { source: 'Math.pow(' + lhs.source + ',' + rhs.source + ')', type: 'number' };
+          }
+          return lhs;
+        }
+
+        function parseMultiplicativeExpression() {
+          var lhs = parsePowerExpression(), rhs, op;
+          while (test('operator', '*') || test('operator', '/')) {
+            op = match('operator');
+            rhs = parsePowerExpression();
+
+            enforce_type(lhs.type, 'number');
+            enforce_type(rhs.type, 'number');
+
+            switch (op) {
+              case "*": lhs = { source: '(' + lhs.source + '*' + rhs.source + ')', type: 'number' }; break;
+              case "/": lhs = { source: 'lib.div(' + lhs.source + ',' + rhs.source + ')', type: 'number' }; break;
+            }
+          }
+          return lhs;
+        }
+
+        function parseAdditiveExpression() {
+          var lhs = parseMultiplicativeExpression(), rhs, op;
+          while (test('operator', '+') || test('operator', '-')) {
+            op = match('operator');
+            rhs = parseMultiplicativeExpression();
+
+            switch (op) {
+              case "+":
+                enforce_type(rhs.type, lhs.type);
+                lhs = { source: '(' + lhs.source + '+' + rhs.source + ')', type: lhs.type }; break;
+              case "-":
+                enforce_type(lhs.type, 'number');
+                enforce_type(rhs.type, 'number');
+                lhs = { source: '(' + lhs.source + '-' + rhs.source + ')', type: lhs.type }; break;
+            }
+          }
+          return lhs;
+        }
+
+        function parseRelationalExpression() {
+          var lhs = parseAdditiveExpression(), rhs, op;
+          while (test('operator', '<') || test('operator', '>') || test('operator', '=')) {
+
+            op = match('operator');
+            switch (op) {
+            case '<':
+              if (test('operator', '=', true)) { op = '<='; break; }
+              if (test('operator', '>', true)) { op = '!=='; break; }
+              break;
+            case '>':
+              if (test('operator', '=', true)) { op = '>='; break; }
+              if (test('operator', '<', true)) { op = '!=='; break; }
+              break;
+            case '=':
+              if (test('operator', '<', true)) { op = '<='; break; }
+              if (test('operator', '>', true)) { op = '>='; break; }
+              if (test('operator', '=', true)) { op = '==='; break; }
+              op = '===';
+            }
+
+            rhs = parseAdditiveExpression();
+
+            enforce_type(rhs.type, lhs.type);
+            lhs = lhs = { source: '((' + lhs.source + op + rhs.source + ')?1:0)', type: 'number' };
+          }
+          return lhs;
+        }
+
+        function parseAndExpression() {
+          var lhs = parseRelationalExpression(), rhs;
+          while (test('reserved', kws.AND, true)) {
+            rhs = parseRelationalExpression();
+
+            enforce_type(lhs.type, 'number');
+            enforce_type(rhs.type, 'number');
+
+            lhs = {
+              source: '((' + lhs.source + '&&' + rhs.source + ')?1:0)',
+              type: 'number'
+            };
+          }
+          return lhs;
+        }
