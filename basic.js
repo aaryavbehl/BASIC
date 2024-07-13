@@ -730,3 +730,189 @@ this.basic = (function() {
         }
         env.tty.setCursorPosition(0, env.tty.getScreenSize().height - 1);
       },
+
+      'notrace': function NOTRACE() {
+        state.trace_mode = false;
+      },
+      'trace': function TRACE() {
+        state.trace_mode = true;
+      },
+
+      'gr': function GR() {
+        if (!env.lores) { runtime_error('Lores graphics not supported'); }
+        env.display.setState("lores", true, "full", false, "graphics", true);
+        env.lores.clear();
+
+        if (env.tty.textWindow) {
+          env.tty.textWindow.left = 0;
+          env.tty.textWindow.width = env.tty.getScreenSize().width;
+          env.tty.textWindow.top = env.tty.getScreenSize().height - 4;
+          env.tty.textWindow.height = 4;
+        }
+
+        env.tty.setCursorPosition(0, env.tty.getScreenSize().height);
+      },
+
+      'color': function COLOR(n) {
+        if (!env.lores) { runtime_error('Lores graphics not supported'); }
+
+        n = n >> 0;
+        if (n < 0 || n > 255) { runtime_error(ERRORS.ILLEGAL_QUANTITY); }
+
+        env.lores.setColor(n);
+      },
+
+      'plot': function PLOT(x, y) {
+        if (!env.lores) { runtime_error('Lores graphics not supported'); }
+
+        x = x >> 0;
+        y = y >> 0;
+
+        var size = env.lores.getScreenSize();
+        if (x < 0 || y < 0 || x >= size.width || y >= size.height) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+
+        env.lores.plot(x, y);
+      },
+
+      'hlin': function HLIN(x1, x2, y) {
+        if (!env.lores) { runtime_error('Lores graphics not supported'); }
+
+        x1 = x1 >> 0;
+        x2 = x2 >> 0;
+        y = y >> 0;
+
+        var size = env.lores.getScreenSize();
+        if (x1 < 0 || x2 < 0 || y < 0 ||
+                    x1 >= size.width || x2 >= size.width || y >= size.height) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+
+        env.lores.hlin(x1, x2, y);
+      },
+
+      'vlin': function VLIN(y1, y2, x) {
+        if (!env.lores) { runtime_error('Lores graphics not supported'); }
+
+        y1 = y1 >> 0;
+        y2 = y2 >> 0;
+        x = x >> 0;
+
+        var size = env.lores.getScreenSize();
+        if (x < 0 || y1 < 0 || y2 < 0 ||
+                    x >= size.width || y1 >= size.height || y2 >= size.height) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+
+        env.lores.vlin(y1, y2, x);
+      },
+
+      'hgr': function HGR() {
+        if (!env.hires) { runtime_error('Hires graphics not supported'); }
+        env.display.setState("lores", false, "full", false, "page1", true, "graphics", true);
+        env.display.hires_plotting_page = 1;
+        env.hires.clear();
+      },
+
+      'hgr2': function HGR2() {
+        if (!env.hires) { runtime_error('Hires graphics not supported'); }
+        env.display.setState("lores", false, "full", true, "page1", false, "graphics", true);
+        env.display.hires_plotting_page = 2;
+        env.hires2.clear();
+      },
+
+      'hcolor': function HCOLOR(n) {
+        if (!env.hires) { runtime_error('Hires graphics not supported'); }
+        n = n >> 0;
+        if (n < 0 || n > 7) { runtime_error(ERRORS.ILLEGAL_QUANTITY); }
+        env.hires.setColor(n);
+        if (env.hires2) { env.hires2.setColor(n); }
+      },
+
+      'hplot': function HPLOT(/* ...coords */) {
+        var hires = env.display.hires_plotting_page === 2 ? env.hires2 : env.hires;
+        if (!hires) { runtime_error('Hires graphics not supported'); }
+
+        var coords = Array.prototype.slice.call(arguments),
+                    size = hires.getScreenSize(),
+                    x, y;
+
+        x = coords.shift() >> 0;
+        y = coords.shift() >> 0;
+
+        if (x < 0 || y < 0 || x >= size.width || y >= size.height) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+
+        hires.plot(x, y);
+        while (coords.length) {
+          x = coords.shift() >> 0;
+          y = coords.shift() >> 0;
+          if (x < 0 || y < 0 || x >= size.width || y >= size.height) {
+            runtime_error(ERRORS.ILLEGAL_QUANTITY);
+          }
+          hires.plot_to(x, y);
+        }
+      },
+
+      'hplot_to': function HPLOT_TO(/* ...coords */) {
+        var hires = env.display.hires_plotting_page === 2 ? env.hires2 : env.hires;
+        if (!hires) { runtime_error('Hires graphics not supported'); }
+
+        var coords = Array.prototype.slice.call(arguments),
+            size = hires.getScreenSize(), x, y;
+
+        while (coords.length) {
+          x = coords.shift() >> 0;
+          y = coords.shift() >> 0;
+
+          if (x < 0 || y < 0 || x >= size.width || y >= size.height) {
+            runtime_error(ERRORS.ILLEGAL_QUANTITY);
+          }
+
+          hires.plot_to(x, y);
+        }
+      },
+ 
+      'pr#': function PR(slot) {
+        if (slot === 0) {
+          if (env.tty.setFirmwareActive) { env.tty.setFirmwareActive(false); }
+        } else if (slot === 3) {
+          if (env.tty.setFirmwareActive) { env.tty.setFirmwareActive(true); }
+        }
+      },
+
+      'poke': function POKE(address, value) {
+        address = address & 0xffff;
+
+        value = value >> 0;
+        if (value < 0 || value > 255) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+
+        if (!({}.hasOwnProperty.call(poke_table, address))) {
+          runtime_error("Unsupported POKE location: " + address);
+        }
+
+        poke_table[address](value);
+      },
+
+      'call': function CALL(address) {
+        address = address & 0xffff;
+
+        if (!({}.hasOwnProperty.call(call_table, address))) {
+          runtime_error("Unsupported POKE location: " + address);
+        }
+
+        call_table[address]();
+      },
+
+      'speed': function SPEED(n) {
+        n = n >> 0;
+        if (n < 0 || n > 255) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+
+        env.tty.speed = n;
+      },
