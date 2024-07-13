@@ -916,3 +916,202 @@ this.basic = (function() {
 
         env.tty.speed = n;
       },
+
+      'div': function div(n, d) {
+        var r = n / d;
+        if (!isFinite(r)) { runtime_error(ERRORS.DIVISION_BY_ZERO); }
+        return r;
+      },
+
+      'fn': function fn(name, arg) {
+        if (!{}.hasOwnProperty.call(state.functions, name)) {
+          runtime_error(ERRORS.UNDEFINED_FUNCTION);
+        }
+        return state.functions[name](arg);
+      },
+
+      'checkFinite': function checkFinite(n) {
+        if (!isFinite(n)) { runtime_error(ERRORS.OVERFLOW); }
+        return n;
+      },
+
+      'toint': function toint(n) {
+        n = n >> 0;
+        if (n > 0x7fff || n < -0x8000) { runtime_error(ERRORS.ILLEGAL_QUANTITY); }
+        return n;
+      }
+    };
+
+    function funcsign(func /*, return_type, ...arg_types */) {
+      func.signature = Array.prototype.slice.call(arguments, 1);
+      return func;
+    }
+
+    funlib = {};
+
+      funlib[kws.ABS] = funcsign(Math.abs, 'number', 'number');
+      funlib[kws.ASC] = funcsign(function(s) {
+        if (s.length < 1) { runtime_error(ERRORS.ILLEGAL_QUANTITY); }
+        return s.charCodeAt(0);
+      }, 'number', 'string');
+      funlib[kws.ATN] = funcsign(Math.atan, 'number', 'number');
+      funlib[kws.CHR$] = funcsign(String.fromCharCode, 'string', 'number');
+      funlib[kws.COS] = funcsign(Math.cos, 'number', 'number');
+      funlib[kws.EXP] = funcsign(Math.exp, 'number', 'number');
+      funlib[kws.INT] = funcsign(Math.floor, 'number', 'number');
+      funlib[kws.LEN] = funcsign(function LEN(s) { return s.length; }, 'number', 'string');
+      funlib[kws.LOG] = funcsign(Math.log, 'number', 'number');
+      funlib[kws.SGN] = funcsign(function SGN(n) { return n > 0 ? 1 : n < 0 ? -1 : 0; }, 'number', 'number');
+      funlib[kws.SIN] = funcsign(Math.sin, 'number', 'number');
+      funlib[kws.SQR] = funcsign(Math.sqrt, 'number', 'number');
+      funlib[kws.STR$] = funcsign(function STR$(n) { return n.toString(); }, 'string', 'number');
+      funlib[kws.TAN] = funcsign(Math.tan, 'number', 'number');
+      funlib[kws.VAL] = funcsign(function VAL(s) {
+        var n = parseFloat(s);
+        return isFinite(n) ? n : 0;
+      }, 'number', 'string');
+
+      funlib[kws.RND] = funcsign(function RND(n) {
+        if (n > 0) {
+
+          return state.prng.next();
+        } else if (n < 0) {
+
+          state.prng.seed(n);
+          return state.prng.next();
+        }
+        return state.prng.last;
+      }, 'number', 'number');
+
+      funlib[kws.LEFT$] = funcsign(function LEFT$(s, n) {
+        if (n < 1 || n > 255) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+        return s.substring(0, n);
+      }, 'string', 'string', 'number');
+      funlib[kws.MID$] = funcsign(function MID$(s, n, n2) {
+        if (n < 1 || n > 255) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+        if (n2 < 0 || n2 > 255) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+        return n2 === (void 0) ? s.substring(n - 1) : s.substring(n - 1, n + n2 - 1);
+      }, 'string', 'string', 'number', 'number?');
+      funlib[kws.RIGHT$] = funcsign(function RIGHT$(s, n) {
+        if (n < 1 || n > 255) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+        return s.length < n ? s : s.substring(s.length - n);
+      }, 'string', 'string', 'number');
+
+      funlib[kws.POS] = funcsign(function POS(n) { return env.tty.getCursorPosition().x; }, 'number', 'number');
+      funlib[kws.SCRN] = funcsign(function SCRN(x, y) {
+        if (!env.lores) { runtime_error("Graphics not supported"); }
+        x = x >> 0;
+        y = y >> 0;
+        var size = env.lores.getScreenSize();
+        if (x < 0 || y < 0 || x >= size.width || y >= size.height) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+
+        return env.lores.getPixel(x, y);
+      }, 'number', 'number', 'number');
+      funlib[kws.HSCRN] = funcsign(function HSCRN(x, y) {
+        var hires = env.display.hires_plotting_page === 2 ? env.hires2 : env.hires;
+        if (!hires) { runtime_error("Graphics not supported"); }
+
+        x = x >> 0;
+        y = y >> 0;
+        var size = hires.getScreenSize();
+        if (x < 0 || y < 0 || x >= size.width || y >= size.height) {
+          runtime_error(ERRORS.ILLEGAL_QUANTITY);
+        }
+
+        return hires.getPixel(x, y);
+      }, 'number', 'number', 'number');
+
+      funlib[kws.PDL] = funcsign(function PDL(n) {
+        if (env.paddle) {
+          return (env.paddle(n) * 255) & 0xff;
+        } else {
+          return runtime_error('Paddles not attached');
+        }
+      }, 'number', 'number');
+      funlib[kws.FRE] = funcsign(function FRE(n) {
+        return JSON ? JSON.stringify([state.variables, state.arrays, state.functions]).length : 0;
+      }, 'number', 'number');
+      funlib[kws.PEEK] = funcsign(function PEEK(address) {
+        address = address & 0xffff;
+        if (!{}.hasOwnProperty.call(peek_table, address)) {
+          runtime_error("Unsupported PEEK location: " + address);
+        }
+        return peek_table[address]();
+      }, 'number', 'number');
+
+      funlib[kws.USR] = funcsign(function USR(n) { runtime_error("USR Function not supported"); }, 'number', 'number');
+
+    var program = (function() {
+
+      var identifiers = {
+        variables: {},
+        arrays: {}
+      };
+
+      var match, test, endOfStatement, endOfProgram,
+          currLine = 0, currColumn = 0,
+          currLineNumber = 0;
+
+      function parse_error(msg) {
+        return new basic.ParseError(msg + " in line " + currLineNumber,
+                                    currLine, currColumn);
+      }
+
+
+      (function(source) {
+        function munge(kw) {
+
+          function escape(c) { return (/[[\]\\^$.|?*+()]/).test(c) ? '\\' + c : c; }
+
+          return kw.split(/(?=\W)/).map(escape).join('[ \\t]*');
+        }
+
+        var RESERVED_WORDS = [
+          kws.ABS, kws.AND, kws.ASC, kws.ATN, kws.AT, kws.CALL,
+          kws.CHR$, kws.CLEAR, kws.COLOR, kws.CONT, kws.COS,
+          /*kws.DATA,*/ kws.DEF, kws.DEL, kws.DIM, kws.DRAW, kws.END,
+          kws.EXP, kws.FLASH, kws.FN, kws.FOR, kws.FRE, kws.GET,
+          kws.GOSUB, kws.GOTO, kws.GR, kws.HCOLOR, kws.HGR2, kws.HGR,
+          kws.HIMEM, kws.HLIN, kws.HOME, kws.HPLOT, kws.HTAB, kws.IF,
+          kws.IN, kws.INPUT, kws.INT, kws.INVERSE, kws.LEFT$, kws.LEN,
+          kws.LET, kws.LIST, kws.LOAD, kws.LOG, kws.LOMEM, kws.MID$,
+          kws.NEW, kws.NEXT, kws.NORMAL, kws.NOTRACE, kws.NOT,
+          kws.ONERR, kws.ON, kws.OR, kws.PDL, kws.PEEK, kws.PLOT,
+          kws.POKE, kws.POP, kws.POS, kws.PRINT, kws.PR, kws.READ,
+          kws.RECALL, /*kws.REM,*/ kws.RESTORE, kws.RESUME,
+          kws.RETURN, kws.RIGHT$, kws.RND, kws.ROT, kws.RUN, kws.SAVE,
+          kws.SCALE, kws.SCRN, kws.SGN, kws.SHLOAD, kws.SIN, kws.SPC,
+          kws.SPEED, kws.SQR, kws.STEP, kws.STOP, kws.STORE, kws.STR$,
+          kws.TAB, kws.TAN, kws.TEXT, kws.THEN, kws.TO, kws.TRACE,
+          kws.USR, kws.VAL, kws.VLIN, kws.VTAB, kws.WAIT, kws.XDRAW,
+          kws.AMPERSAND, kws.QUESTION, kws.HSCRN
+        ];
+           
+        RESERVED_WORDS.sort();
+        RESERVED_WORDS.reverse();
+
+        var regexReservedWords = new RegExp("^(" + RESERVED_WORDS.map(munge).join("|") + ")", "i"),
+            regexIdentifier = /^([A-Za-z][A-Za-z0-9]?)[A-Za-z0-9]*(\$|%)?/,
+            regexStringLiteral = /^"([^"]*?)(?:"|(?=\n|\r|$))/,
+            regexNumberLiteral = /^[0-9]*\.?[0-9]+(?:[eE]\s*[-+]?\s*[0-9]+)?/,
+            regexHexLiteral = /^\$[0-9A-Fa-f]+/,
+            regexOperator = /^[;=<>+\-*/^(),]/,
+
+            regexLineNumber = /^[0-9]+/,
+            regexSeparator = /^:/,
+
+            regexRemark = new RegExp('^(' + munge(kws.REM) + '([^\r\n]*))', 'i'),
+            regexData = new RegExp('^(' + munge(kws.DATA) + ')', 'i'),
+
+            regexLinearWhitespace = /^[ \t]+/,
+            regexNewline = /^\r?\n/;
