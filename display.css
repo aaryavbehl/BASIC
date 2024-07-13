@@ -1,26 +1,18 @@
-.jsb-frame   {width: 560px; height: 384px; border-style: ridge; border-width: 10px; border-color: rgb(0, 255, 21); padding: 10px; background-color: #181818; }
-.jsb-frame:focus { background-color: #001300; }
+.jsb-frame   {width: 560px; height: 384px; border-style: ridge; border-width: 10px; border-color: rgb(26, 24, 24); padding: 10px; background-color: #202020; }
+.jsb-frame:focus { background-color: #2b2c2b; }
 .jsb-wrapper { width: 560px; height: 384px; overflow: hidden; padding: 0; margin: 0;  position: relative; }
 .jsb-lores   {position: absolute; z-index: 2; left: 0; top: 0; width: 560px; height: 384px; overflow: hidden; visibility: hidden; }
-.jsb-hires   {position: absolute; z-index: 2; left: 0; top: 0; width: 560px; height: 384px; overflow: hidden; visibility: hidden; background-color: #ffffff; }
+.jsb-hires   {position: absolute; z-index: 2; left: 0; top: 0; width: 560px; height: 384px; overflow: hidden; visibility: hidden; background-color: #000000; }
 .jsb-tty     {position: absolute; z-index: 3; left: 0; top: 0; width: 560px; height: 384px; overflow: hidden;  }
-
 .jsb-tty table { table-layout: fixed; border-collapse: collapse; }
 .jsb-tty tr { height: 16px; }
-
 .jsb-tty .jsb-chr { height: 16px; line-height: 0; border: 0; padding: 0; margin: 0; background-repeat: no-repeat; }
 .jsb-tty .jsb-chr-cursor { position: relative; display: inline-block; }
-
-.jsb-40col .jsb-chr { background-image: url(''); width: 14px; }
-
-.jsb-80col .jsb-chr { background-image: url(''); width: 7px; }
-
-
+.jsb-40col .jsb-chr { background-image: url('res/font-40col.png'); width: 14px; }
+.jsb-80col .jsb-chr { background-image: url('res/font-80col.png'); width: 7px; }
 .jsb-lores table { table-layout: fixed; border-collapse: collapse; }
 .jsb-lores tr { height: 8px; margin: 0; padding: 0; }
 .jsb-lores td { width: 14px; height: 8px; margin: 0; padding: 0; }
-
-
 .jsb-40col .jsb-chr0 { background-position: -168px 0px }
 .jsb-40col .jsb-chr1 { background-position: -168px -16px }
 .jsb-40col .jsb-chr2 { background-position: -168px -32px }

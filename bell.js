@@ -1,6 +1,7 @@
 var Bell;
 if (typeof Bell !== 'function') {
   Bell = function(base) {
+
     if ('AudioContext' in window) {
       this.play = function() {
         if (!this.ctx) {
