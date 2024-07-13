@@ -1491,3 +1491,189 @@ this.basic = (function() {
           }
           return lhs;
         }
+
+        function parseOrExpression() {
+          var lhs = parseAndExpression(), rhs;
+          while (test('reserved', kws.OR, true)) {
+            rhs = parseAndExpression();
+        
+            enforce_type(lhs.type, 'number');
+            enforce_type(rhs.type, 'number');
+        
+            lhs = {
+              source: '((' + lhs.source + '||' + rhs.source + ')?1:0)',
+              type: 'number'
+            };
+          }
+          return lhs;
+        }
+        
+        return parseOrExpression;
+        } ());
+        
+              function parseCommand() {
+        
+                function slib(name /* , ...args */) {
+                  var args = Array.prototype.slice.call(arguments, 1);
+                  return 'lib[' + quote(name) + '](' + args.join(',') + ');';
+                }
+        
+                var keyword = test('identifier') ? kws.LET : match('reserved'),
+                    name, type, subscripts, is_to, expr, param, args, prompt, trailing, js;
+        
+                switch (keyword) {
+        
+                  case kws.CLEAR: 
+                    return slib('clear');
+        
+                  case kws.LET:  
+                    name = match('identifier');
+                    subscripts = parseSubscripts();
+                    match('operator', '=');
+        
+                    type = vartype(name);
+                    if (type === 'int') {
+                      expr = 'lib.toint(lib.checkFinite(' + parseNumericExpression() + '))';
+                    } else if (type === 'float') {
+                      expr = 'lib.checkFinite(' + parseNumericExpression() + ')';
+                    } else { // type === 'string')
+                      expr = parseStringExpression();
+                    }
+        
+                    if (!subscripts) {
+                      identifiers.variables[name] = true;
+                      return 'state.variables[' + quote(name) + '] = ' + expr;
+                    }
+                    identifiers.arrays[name] = true;
+                    return 'state.arrays[' + quote(name) + '].set([' + subscripts + '], ' + expr + ')';
+        
+                  case kws.DIM:
+                    js = '';
+                    do {
+                      name = match('identifier');
+                      subscripts = parseSubscripts();
+                      identifiers.arrays[name] = true;
+                      js += slib('dim', quote(name), '[' + subscripts + ']');
+                    } while (test('operator', ',', true));
+                    return js;
+        
+                  case kws.DEF:     
+                    match("reserved", kws.FN);
+                    name = match('identifier');
+                    match("operator", "(");
+                    param = match('identifier');
+                    match("operator", ")");
+                    match("operator", "=");
+        
+                    if (vartype(name) !== vartype(param)) {
+                      throw parse_error("DEF FN function type and argument type must match");
+                    }
+        
+                    expr = vartype(name) === 'string' ?
+                      parseStringExpression() : parseNumericExpression();
+        
+                    return slib('def', quote(name),
+                                    'function (arg){' +
+
+                                    'var rv,ov=state.variables[' + quote(param) + '];' +
+
+                                    'state.variables[' + quote(param) + ']=arg;' +
+
+                                    'rv=' + expr + ';' +
+
+                                    'state.variables[' + quote(param) + ']=ov;' +
+                                    'return rv;' +
+                                    '}');
+                
+                  case kws.GOTO: 
+                    return slib('goto', match("number"));
+        
+                  case kws.ON: 
+                    expr = parseNumericExpression();
+        
+                    keyword = match('reserved');
+                    if (keyword !== kws.GOTO && keyword !== kws.GOSUB) {
+                      throw parse_error("Syntax error: Expected " + kws.GOTO + " or " + kws.GOSUB);
+                    }
+        
+                    args = [];
+                    do {
+                      args.push(match("number"));
+                    } while (test("operator", ",", true));
+        
+                    return slib(keyword === kws.GOSUB ? 'on_gosub' : 'on_goto', expr, args.join(','));
+        
+                  case kws.GOSUB:
+                    return slib('gosub', match("number"));
+        
+                  case kws.RETURN: 
+                    return slib('return');
+        
+                  case kws.POP: 
+                    return slib('pop');
+        
+                  case kws.FOR: 
+                    name = match('identifier');
+                    if (vartype(name) !== 'float') {
+                      throw parse_error("Syntax error: Expected floating point variable");
+                    }
+                    identifiers.variables[name] = true;
+                    return 'state.variables[' + quote(name) + '] = ' +
+                          (match("operator", "=") && parseNumericExpression()) + ';' +
+                          slib('for', quote(name),
+                           match("reserved", kws.TO) && parseNumericExpression(),
+                           test('reserved', kws.STEP, true) ? parseNumericExpression() : '1');
+        
+                  case kws.NEXT: 
+                    args = [];
+                    if (test('identifier')) {
+                      args.push(quote(match('identifier')));
+                      while (test("operator", ",", true)) {
+                        args.push(quote(match('identifier')));
+                      }
+                    }
+        
+                    return slib('next', args.join(','));
+        
+                  case kws.IF: 
+                    expr = parseAnyExpression();
+        
+                    js = slib('if', expr);
+        
+                    if (test('reserved', kws.GOTO, true)) {
+
+                      return js + slib('goto', match('number'));
+                    }
+        
+                    match('reserved', kws.THEN);
+                    if (test('number')) {
+
+                      return js + slib('goto', match('number'));
+                    }
+
+                    return js + parseCommand(); 
+        
+                  case kws.END:  
+                    return slib('end');
+        
+                  case kws.STOP: 
+                    return slib('stop');
+        
+                  case kws.ONERR: 
+                    return slib('onerr_goto',
+                                    match("reserved", kws.GOTO) && match("number"));
+        
+                  case kws.RESUME:
+                    return slib('resume');
+               
+                  case kws.RESTORE:
+                    return slib('restore');
+        
+                  case kws.READ:
+                    args = [];
+                    do {
+                      args.push(parsePValue());
+                    } while (test("operator", ",", true));
+        
+                    return slib('read', args.join(','));
+    
