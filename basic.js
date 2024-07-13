@@ -1115,3 +1115,179 @@ this.basic = (function() {
 
             regexLinearWhitespace = /^[ \t]+/,
             regexNewline = /^\r?\n/;
+
+        var start = true,
+        stream = new Stream(source);
+
+    function nextToken() {
+      var token = {}, newline = start, ws;
+      start = false;
+
+      currLine = stream.line + 1;
+      currColumn = stream.column + 1;
+
+      do {
+        ws = false;
+        if (stream.match(regexLinearWhitespace)) {
+          ws = true;
+        } else if (stream.match(regexNewline)) {
+          ws = true;
+          newline = true;
+        }
+      } while (ws);
+
+      if (stream.eof()) {
+        return (void 0);
+      }
+
+      if (newline) {
+        if (stream.match(regexLineNumber)) {
+          token.lineNumber = Number(stream.lastMatch[0]);
+        } else if (stream.match(regexSeparator)) {
+
+          token.separator = stream.lastMatch[0];
+        } else {
+          throw parse_error("Syntax error: Expected line number or separator");
+        }
+      } else if (stream.match(regexRemark)) {
+        token.remark = stream.lastMatch[2];
+      } else if (stream.match(regexData)) {
+        token.data = [];
+        parseDataInput(stream, token.data);
+      } else if (stream.match(regexReservedWords)) {
+        token.reserved = stream.lastMatch[1].toUpperCase().replace(/\s+/g, '');
+        if (token.reserved === kws.QUESTION) { token.reserved = kws.PRINT; } // HACK
+      } else if (stream.match(regexIdentifier)) {
+        token.identifier = stream.lastMatch[1].toUpperCase() + (stream.lastMatch[2] || ''); // Canonicalize identifier name
+      } else if (stream.match(regexStringLiteral)) {
+        token.string = stream.lastMatch[1];
+      } else if (stream.match(regexNumberLiteral)) {
+        token.number = parseFloat(stream.lastMatch[0].replace(/\s+/g, ''));
+      } else if (stream.match(regexHexLiteral)) {
+        token.number = parseInt(stream.lastMatch[0].substring(1), 16);
+      } else if (stream.match(regexOperator)) {
+        token.operator = stream.lastMatch[0].replace(/\s+/g, '');
+      } else if (stream.match(regexSeparator)) {
+        token.separator = stream.lastMatch[0];
+      } else {
+        throw parse_error("Syntax error: Unexpected '" + source.substr(0, 40) + "'");
+      }
+      return token;
+    }
+
+    var lookahead = nextToken();
+
+    match = function match(type, value) {
+
+      if (!lookahead) {
+        throw parse_error("Syntax error: Expected " + type + ", saw end of file");
+      }
+
+      var token = lookahead;
+      if ('lineNumber' in token) {
+        currLineNumber = token.lineNumber;
+      }
+      lookahead = nextToken();
+
+      if (!{}.hasOwnProperty.call(token, type)) {
+        throw parse_error("Syntax error: Expected " + type + ", saw " + JSON.stringify(token));
+      }
+
+      if (value !== (void 0) && token[type] !== value) {
+        throw parse_error("Syntax error: Expected '" + value + "', saw " + JSON.stringify(token));
+      }
+
+      return token[type];
+    };
+
+    test = function test(type, value, consume) {
+      if (lookahead && {}.hasOwnProperty.call(lookahead, type) &&
+                    (value === (void 0) || lookahead[type] === value)) {
+
+        if (consume) {
+          var token = lookahead;
+          if ('lineNumber' in token) {
+            currLineNumber = token.lineNumber;
+          }
+          lookahead = nextToken();
+        }
+
+        return true;
+      }
+
+      return false;
+    };
+
+    endOfStatement = function endOfStatement() {
+      return !lookahead ||
+                    {}.hasOwnProperty.call(lookahead, 'separator') ||
+                    {}.hasOwnProperty.call(lookahead, 'lineNumber');
+    };
+
+    endOfProgram = function endOfProgram() {
+      return !lookahead;
+    };
+
+  } (source));
+
+  function quote(string) {
+    return JSON.stringify(string);
+  }
+
+  var parseExpression, parseSubscripts;
+
+  function parseAnyExpression() {
+    var expr = parseExpression();
+    return expr.source;
+  }
+
+  function enforce_type(actual, expected) {
+    if (actual !== expected) {
+      throw parse_error('Type mismatch error: Expected ' + expected);
+    }
+  }
+
+  function parseStringExpression() {
+    var expr = parseExpression();
+    enforce_type(expr.type, 'string');
+    return expr.source;
+  }
+
+  function parseNumericExpression() {
+    var expr = parseExpression();
+    enforce_type(expr.type, 'number');
+    return expr.source;
+  }
+
+  parseSubscripts = function() {
+    var subscripts; 
+
+    if (test('operator', '(', true)) {
+
+      subscripts = [];
+
+      do {
+        subscripts.push(parseNumericExpression());
+      } while (test('operator', ',', true));
+
+      match("operator", ")");
+
+      return subscripts.join(',');
+    }
+    return (void 0);
+  };
+
+  function parsePValue() {
+    var name = match('identifier'),
+        subscripts = parseSubscripts();
+
+    if (subscripts) {
+      identifiers.arrays[name] = true;
+      return '(function (value){state.parsevar(' +
+                    quote(name) + ',[' + subscripts + '],value);})';
+    } else {
+      identifiers.variables[name] = true;
+      return '(function (value){state.parsevar(' +
+                    quote(name) + ',value);})';
+    }
+  }
